@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  username String  @id @db.VarChar(100)
+  password String  @db.VarChar(100)
+  name     String  @db.VarChar(100)
+  token    String? @db.VarChar(100)
+
+  @@map("users")
+}
+
+model Penerima {
+  id        Int      @id @default(autoincrement())
+  nama      String   @db.VarChar(100)
+  email     String   @db.VarChar(100) @unique
+  surat     Surat[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("penerima")
+}
+
+model Surat {
+  id               Int      @id @default(autoincrement())
+  nomor_registrasi Int      @default(autoincrement()) @unique
+  pengirim         String   @db.VarChar(100)
+  tujuan           String   @db.VarChar(100)
+  nomor_surat      String   @db.VarChar(50)
+  tanggal_masuk    DateTime
+  tanggal_surat    DateTime
+  perihal          String   @db.VarChar(255)
+  file_url         String   @db.VarChar(255)
+  status           String   @db.VarChar(20) @default("pending")
+  penerima_id      Int
+  penerima         Penerima @relation(fields: [penerima_id], references: [id])
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("surat")
+}
