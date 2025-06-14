@@ -1,0 +1,32 @@
+{
+  "name": "sistem-manajemen-surat-be",
+  "version": "1.0.0",
+  "description": "Sistem manajemen surat backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    }
+  },
+  "author": "Falih Dzakwan Zuhdi",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "express": "^5.1.0",
+    "zod": "^3.25.64"
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.27.1",
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.0",
+    "prisma": "^6.9.0",
+    "supertest": "^7.1.1",
+    "typescript": "^5.8.3"
+  }
+}
