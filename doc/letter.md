@@ -28,6 +28,7 @@ Response Body (Success):
 ```json
 {
   "data": {
+    "id": 1,
     "nomor_registrasi": 1,
     "tujuan": "Dinas Kesehatan Bandar Lampung",
     "nomor_surat": "001/2023",
@@ -64,6 +65,7 @@ Response Body (Success):
 {
   "data": [
     {
+      "id": 1,
       "nomor_registrasi": 1,
       "tujuan": "Dinas Kesehatan Bandar Lampung",
       "nomor_surat": "001/2023",
@@ -83,7 +85,7 @@ Response Body (Success):
 
 ## Get Letter Details
 
-Endpoint : GET /api/surat/{id}
+Endpoint : GET /api/surat/{nomor_registrasi}
 
 Request Header :
 
@@ -94,6 +96,7 @@ Response Body (Success):
 ```json
 {
   "data": {
+    "id": 1,
     "nomor_registrasi": 1,
     "tujuan": "Dinas Kesehatan Bandar Lampung",
     "nomor_surat": "001/2023",
@@ -123,7 +126,7 @@ Response Body (Failed):
 
 ## Update Letter Status
 
-Endpoint : PATCH /api/surat/{id}/status
+Endpoint : PATCH /api/surat/{nomor_registrasi}/status
 
 Request Header :
 
@@ -159,7 +162,7 @@ Response Body (Failed):
 
 ## Update Letter (Full/Partial Update)
 
-Endpoint : PUT /api/surat/{id}  
+Endpoint : PUT /api/surat/{nomor_registrasi}  
 
 Request Header :  
 - X-API-TOKEN : token  
@@ -184,6 +187,7 @@ Response Body (Success):
 ```json
 {
   "data": {
+    "id": 1,
     "nomor_registrasi": 1,
     "pengirim": "Kemendagri RI",
     "tujuan": "Dinas Kesehatan Kota Bandar Lampung",
@@ -208,7 +212,7 @@ Response Body (Failed):
 
 ## Letter Download
 
-Endpoint : GET /api/surat/{id}/file
+Endpoint : GET /api/surat/{nomor_registrasi}/file
 
 Request Header :
 
@@ -232,7 +236,7 @@ Response Body (Failed):
 
 ## Delete Letter
 
-Endpoint : DELETE /api/surat/{id}
+Endpoint : DELETE /api/surat/{nomor_registrasi}
 
 Request Header :
 
