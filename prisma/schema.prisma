@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "../../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -26,7 +26,7 @@ model User {
 model Penerima {
   id        Int      @id @default(autoincrement())
   nama      String   @db.VarChar(100)
-  email     String   @db.VarChar(100) @unique
+  email     String   @unique @db.VarChar(100)
   surat     Surat[]
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -36,7 +36,7 @@ model Penerima {
 
 model Surat {
   id               Int      @id @default(autoincrement())
-  nomor_registrasi Int      @default(autoincrement()) @unique
+  nomor_registrasi Int      @unique @default(autoincrement())
   pengirim         String   @db.VarChar(100)
   tujuan           String   @db.VarChar(100)
   nomor_surat      String   @db.VarChar(50)
@@ -44,7 +44,7 @@ model Surat {
   tanggal_surat    DateTime
   perihal          String   @db.VarChar(255)
   file_url         String   @db.VarChar(255)
-  status           String   @db.VarChar(20) @default("pending")
+  status           String   @default("pending") @db.VarChar(20)
   penerima_id      Int
   penerima         Penerima @relation(fields: [penerima_id], references: [id])
   createdAt        DateTime @default(now()) @map("created_at")
