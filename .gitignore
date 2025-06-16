@@ -44,3 +44,7 @@ uploads/
 # TypeScript cache
 .tscache/
 /generated/prisma
+
+test/files/
+!test/files/test.pdf
+!test/files/test.docx
