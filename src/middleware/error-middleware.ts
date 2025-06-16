@@ -5,37 +5,39 @@ import multer from "multer";
 import { logger } from "../application/logging";
 
 export const errorMiddleware = (
-  error: Error,
+  error: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  if (error instanceof ZodError) {
+  const err = error instanceof Error ? error : new Error(String(error));
+
+  if (err instanceof ZodError) {
     return res.status(400).json({
-      errors: error.errors.map((e) => ({
+      errors: err.errors.map((e) => ({
         path: e.path.join("."),
         message: e.message,
       })),
     });
-  } else if (error instanceof multer.MulterError) {
-    if (error.code === "LIMIT_FILE_SIZE") {
-      error.message = "File size exceeds 10MB limit";
+  } else if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      err.message = "File size exceeds 10MB limit";
     } else if (
-      error.code === "LIMIT_UNEXPECTED_FILE" &&
-      error.message.includes("Only PDF and DOCX")
+      err.code === "LIMIT_UNEXPECTED_FILE" &&
+      err.message.includes("Only PDF and DOCX")
     ) {
-      error.message = "Only PDF and DOCX files are allowed";
+      err.message = "Only PDF and DOCX files are allowed";
     }
 
     return res.status(400).json({
-      errors: error.message,
+      errors: err.message,
     });
-  } else if (error instanceof ResponseError) {
-    return res.status(error.status).json({
-      errors: error.message,
+  } else if (err instanceof ResponseError) {
+    return res.status(err.status).json({
+      errors: err.message,
     });
   } else {
-    logger.error(error);
+    logger.error(err);
     return res.status(500).json({
       errors: "Internal Server Error",
     });
