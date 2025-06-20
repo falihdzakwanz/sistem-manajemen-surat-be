@@ -1,151 +1,191 @@
-# User API Spec
+# Unified User API Specification
 
-## Register User
+## User Roles
+- `admin`: Full system access (manage all users/letters)
+- `user`: Institutional receivers (only access assigned letters)
 
-Endpoint : POST /api/users
+---
 
-Request Body :
+## Authentication
 
+### Register User (Development/Admin Only)
+**Endpoint**: `POST /api/users`  
+**Headers**:  
+- `X-API-TOKEN`: Admin token (required for production)
+
+**Request**:
 ```json
 {
-  "username" : "kominfobalam",
-  "password" : "rahasia",
-  "name" : "Kominfo Bandar Lampung"
+  "email_instansi": "kominfo@bandarlampung.go.id",
+  "password": "securepassword",
+  "nama_instansi": "Dinas Kominfo",
+  "role": "admin" // or "user"
 }
 ```
 
-Response Body (Success) :
+**Success Response (201)**:
 
 ```json
 {
-  "data" : {
-    "username" : "kominfobalam",
-    "name" : "Kominfo Bandar Lampung"
+  "data": {
+    "id": 1,
+    "email_instansi": "kominfo@bandarlampung.go.id",
+    "nama_instansi": "Dinas Kominfo",
+    "role": "admin",
+    "created_at": "2023-08-20T08:00:00Z"
   }
 }
 ```
 
-Response Body (Failed) :
+**Error Responses**:
+
+**400 Bad Request**:
+
+```json
+{ "errors": "Email already registered" }
+```
+
+**403 Forbidden (non-admin in production):**
+
+```json
+{ "errors": "Insufficient permissions" }
+```
+
+### Login
+**Endpoint**: `POST /api/users/login`
+
+**Request**:
 
 ```json
 {
-  "errors" : "Input tidak valid"
+  "email_instansi": "kominfo@bandarlampung.go.id",
+  "password": "securepassword"
 }
 ```
 
-## Login User
-
-Endpoint : POST /api/users/login
-
-Request Body :
+**Success Response (200)**:
 
 ```json
 {
-  "username" : "kominfobalam",
-  "password" : "rahasia"
-}
-```
-
-Response Body (Success) :
-
-```json
-{
-  "data" : {
-    "username" : "kominfobalam",
-    "name" : "Kominfo Bandar Lampung",
-    "token" : "uuid"
+  "data": {
+    "token": "eyJhbGciOi...",
+    "user": {
+      "id": 1,
+      "email_instansi": "kominfo@bandarlampung.go.id",
+      "nama_instansi": "Dinas Kominfo",
+      "role": "admin"
+    }
   }
 }
 ```
 
-Response Body (Failed) :
+**Error Responses:**
+
+**401 Unauthorized:**
 
 ```json
-{
-  "errors" : "Username atau password salah"
-}
+{ "errors": "Invalid credentials" }
 ```
 
-## Get User
+## User Management
 
-Endpoint : GET /api/users/current
+### Get Current User
 
-Request Header :
-- X-API-TOKEN : token
+**Endpoint**: `GET /api/users/current`
 
-Response Body (Success) :
+**Headers**:
+
+**Authorization**: `Bearer <token>`
+
+**Success Response (200)**:
 
 ```json
 {
-  "data" : {
-    "username" : "kominfobalam",
-    "name" : "Kominfo Bandar Lampung"
+  "data": {
+    "id": 1,
+    "email_instansi": "kominfo@bandarlampung.go.id",
+    "nama_instansi": "Dinas Kominfo",
+    "role": "admin",
+    "created_at": "2023-08-20T08:00:00Z"
   }
 }
 ```
 
-Response Body (Failed) :
+### Update User
+**Endpoint**: `PATCH /api/users/current`
+
+**Headers**:
+
+**Authorization**: `Bearer <token>`
+
+**Request**:
 
 ```json
 {
-  "errors" : "Unauthorized, ..."
+  "nama_instansi": "Updated Name",
+  "password": "newpassword" // Optional
 }
 ```
 
-## Update User
-
-Endpoint : PATCH /api/users/current
-
-Request Header :
-- X-API-TOKEN : token
-
-Request Body :
+**Success Response (200)**:
 
 ```json
 {
-  "password" : "rahasia", // tidak wajib
-  "name" : "Kominfo" // tidak wajib
-}
-```
-
-Response Body (Success) :
-
-```json
-{
-  "data" : {
-    "username" : "kominfo",
-    "name" : "Kominfo"
+  "data": {
+    "email_instansi": "kominfo@bandarlampung.go.id",
+    "nama_instansi": "Updated Name"
   }
 }
 ```
 
-Response Body (Failed) :
+### Admin: List All Users
+**Endpoint**: `GET /api/users`
+
+**Headers**:
+
+**Authorization**: `Bearer <admin_token>`
+
+**Success Response (200)**:
 
 ```json
 {
-  "errors" : "Unauthorized, ..."
+  "data": [
+    {
+      "id": 1,
+      "email_instansi": "kominfo@bandarlampung.go.id",
+      "nama_instansi": "Dinas Kominfo",
+      "role": "admin",
+      "total_surat": 5,
+      "created_at": "2023-08-20T08:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1
+  }
 }
 ```
 
-## Logout User
+### Admin: Delete User
 
-Endpoint : DELETE /api/users/current
+**Endpoint**: `DELETE /api/users/{id}`
 
-Request Header :
-- X-API-TOKEN : token
+**Headers**:
 
-Response Body (Success) :
+**Authorization**: `Bearer <admin_token>`
+
+**Success Response (200)**:
 
 ```json
 {
-  "data" : "OK"
+  "data": "OK"
 }
 ```
 
-Response Body (Failed) :
+**Error Response (400)**:
 
 ```json
 {
-  "errors" : "Unauthorized, ..."
+  "errors": "Cannot delete user: 3 letters are assigned"
 }
 ```
