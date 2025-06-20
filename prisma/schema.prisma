@@ -1,9 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -12,46 +8,44 @@ datasource db {
 }
 
 model User {
-  username String  @id @db.VarChar(100)
-  password String  @db.VarChar(100)
-  name     String  @db.VarChar(100)
-  token    String? @db.VarChar(100)
+  id             Int       @id @default(autoincrement())
+  email_instansi String    @unique @db.VarChar(255)
+  password       String    @db.VarChar(255)
+  nama_instansi  String    @db.VarChar(255)
+  role           UserRole  @default(user)
+  token          String?   @db.VarChar(255)
+  letters        Letter[]
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
   @@map("users")
 }
 
-model Receiver {
-  id        Int      @id @default(autoincrement())
-  nama      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(100)
-  letters   Letter[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("penerima")
-}
-
 model Letter {
-  id               Int      @id @default(autoincrement())
-  nomor_registrasi Int      @unique @default(autoincrement())
-  pengirim         String   @db.VarChar(100)
-  tujuan           String   @db.VarChar(100)
-  nomor_surat      String   @db.VarChar(50)
-  tanggal_masuk    DateTime
-  tanggal_surat    DateTime
-  perihal          String   @db.VarChar(255)
-  file_url         String   @db.VarChar(255)
+  id               Int          @id @default(autoincrement())
+  nomor_registrasi Int          @unique
+  pengirim         String       @db.VarChar(100)
+  tujuan           String       @db.VarChar(100)
+  nomor_surat      String       @db.VarChar(50)
+  tanggal_masuk    String       @db.VarChar(10)  // DD-MM-YYYY format
+  tanggal_surat    String       @db.VarChar(10)  // DD-MM-YYYY format
+  perihal          String       @db.VarChar(255)
+  file_url         String       @db.VarChar(255)
   status           LetterStatus @default(pending)
-  penerima_id      Int
-  penerima         Receiver @relation(fields: [penerima_id], references: [id])
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  user_id          Int
+  user             User         @relation(fields: [user_id], references: [id])
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
 
   @@map("surat")
+}
+
+enum UserRole {
+  admin
+  user
 }
 
 enum LetterStatus {
   pending
   diterima
-  ditolak
 }
