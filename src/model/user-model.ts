@@ -1,30 +1,39 @@
 import { User } from "@prisma/client";
 
 export type UserResponse = {
-  username: string;
-  name: string;
+  id: number;
+  email_instansi: string;
+  nama_instansi: string;
+  role: string;
   token?: string;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export type CreateUserRequest = {
-  username: string;
-  name: string;
+  email_instansi: string;
+  nama_instansi: string;
   password: string;
+  role?: string;
 };
 
 export type LoginUserRequest = {
-  username: string;
+  email_instansi: string;
   password: string;
 };
 
 export type UpdateUserRequest = {
-  name?: string;
+  nama_instansi?: string;
   password?: string;
 };
 
 export function toUserResponse(user: User): UserResponse {
   return {
-    name: user.name,
-    username: user.username,
+    id: user.id,
+    email_instansi: user.email_instansi,
+    nama_instansi: user.nama_instansi,
+    role: user.role,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
   };
 }

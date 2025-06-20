@@ -34,4 +34,5 @@ apiRouter.patch(
 );
 apiRouter.delete("/api/surat/:nomor_registrasi", LetterController.delete);
 apiRouter.get("/api/surat", LetterController.list);
+apiRouter.get("/api/surat/me", LetterController.listMyLetters); 
 apiRouter.get("/api/surat/:nomor_registrasi/file", LetterController.download);

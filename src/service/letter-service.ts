@@ -11,19 +11,19 @@ import { prismaClient } from "../application/database";
 import { ResponseError } from "../error/response-error";
 import path from "path";
 import fs from "fs";
-import { Receiver } from "@prisma/client";
+import { User } from "@prisma/client";
 
 export class LetterService {
-  private static async validateReceiver(receiverId: number): Promise<Receiver> {
-    const receiver = await prismaClient.receiver.findUnique({
-      where: { id: receiverId },
+  private static async validateUser(userId: number): Promise<User> {
+    const user = await prismaClient.user.findUnique({
+      where: { id: userId },
     });
 
-    if (!receiver) {
-      throw new ResponseError(404, "Receiver not found");
+    if (!user) {
+      throw new ResponseError(404, "User not found");
     }
 
-    return receiver;
+    return user;
   }
 
   private static async saveFile(file: Express.Multer.File): Promise<string> {
@@ -38,7 +38,7 @@ export class LetterService {
 
       return path.relative(process.cwd(), file.path);
     } catch (error) {
-      throw new ResponseError(500, `Failed to process file`); 
+      throw new ResponseError(500, `Failed to process file`);
     }
   }
 
@@ -47,26 +47,34 @@ export class LetterService {
     file?: Express.Multer.File
   ): Promise<LetterResponse> {
     const createRequest = Validation.validate(LetterValidation.CREATE, request);
-    await this.validateReceiver(createRequest.penerima_id);
-    
+    await this.validateUser(createRequest.user_id);
+
     if (!file) {
       throw new ResponseError(400, "File is required");
     }
 
     const filePath = await this.saveFile(file);
+
+    // Get the next registration number
+    const lastLetter = await prismaClient.letter.findFirst({
+      orderBy: { nomor_registrasi: "desc" },
+    });
+    const nextRegNumber = lastLetter ? lastLetter.nomor_registrasi + 1 : 1;
+
     const letter = await prismaClient.letter.create({
       data: {
+        nomor_registrasi: nextRegNumber,
         pengirim: createRequest.pengirim,
         tujuan: createRequest.tujuan,
         nomor_surat: createRequest.nomor_surat,
-        tanggal_masuk: new Date(createRequest.tanggal_masuk),
-        tanggal_surat: new Date(createRequest.tanggal_surat),
+        tanggal_masuk: createRequest.tanggal_masuk,
+        tanggal_surat: createRequest.tanggal_surat,
         perihal: createRequest.perihal,
-        penerima_id: createRequest.penerima_id,
+        user_id: createRequest.user_id,
         file_url: filePath,
         status: "pending",
       },
-      include: { penerima: true },
+      include: { user: true },
     });
 
     return toLetterResponse(letter);
@@ -75,7 +83,7 @@ export class LetterService {
   static async get(nomorRegistrasi: number): Promise<LetterResponse> {
     const letter = await prismaClient.letter.findUnique({
       where: { nomor_registrasi: nomorRegistrasi },
-      include: { penerima: true },
+      include: { user: true },
     });
 
     if (!letter) {
@@ -100,8 +108,8 @@ export class LetterService {
       throw new ResponseError(404, "Letter not found");
     }
 
-    if (updateRequest.penerima_id) {
-      await this.validateReceiver(updateRequest.penerima_id);
+    if (updateRequest.user_id) {
+      await this.validateUser(updateRequest.user_id);
     }
 
     let filePath = existingLetter.file_url;
@@ -118,14 +126,14 @@ export class LetterService {
       data: {
         ...updateRequest,
         tanggal_masuk: updateRequest.tanggal_masuk
-          ? new Date(updateRequest.tanggal_masuk)
+          ? updateRequest.tanggal_masuk
           : undefined,
         tanggal_surat: updateRequest.tanggal_surat
-          ? new Date(updateRequest.tanggal_surat)
+          ? updateRequest.tanggal_surat
           : undefined,
         file_url: file ? filePath : undefined,
       },
-      include: { penerima: true },
+      include: { user: true },
     });
 
     return toLetterResponse(updatedLetter);
@@ -143,7 +151,7 @@ export class LetterService {
     const letter = await prismaClient.letter.update({
       where: { nomor_registrasi: nomorRegistrasi },
       data: { status: updateRequest.status },
-      include: { penerima: true },
+      include: { user: true },
     });
 
     if (!letter) {
@@ -172,10 +180,13 @@ export class LetterService {
     });
   }
 
-  static async list(): Promise<LetterResponse[]> {
+  static async list(userId?: number): Promise<LetterResponse[]> {
+    const whereClause = userId ? { user_id: userId } : {};
+
     const letters = await prismaClient.letter.findMany({
-      include: { penerima: true },
-      orderBy: { createdAt: "desc" },
+      where: whereClause,
+      include: { user: true },
+      orderBy: { created_at: "desc" },
     });
 
     return letters.map(toLetterResponse);
@@ -197,7 +208,9 @@ export class LetterService {
       throw new ResponseError(404, "File not found");
     }
 
-    const fileName = path.basename(letter.file_url);
+    const fileName = `surat-${letter.nomor_registrasi}${path.extname(
+      letter.file_url
+    )}`;
     return { filePath: letter.file_url, fileName };
   }
 }

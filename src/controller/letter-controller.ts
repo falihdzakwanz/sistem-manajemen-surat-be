@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import {
   CreateLetterRequest,
+  LetterListResponse,
+  SingleLetterResponse,
+  StatusUpdateResponse,
   UpdateLetterRequest,
   UpdateStatusRequest,
+  DeleteLetterResponse,
 } from "../model/letter-model";
 import { LetterService } from "../service/letter-service";
 import { UserRequest } from "../type/user-request";
@@ -12,11 +16,15 @@ export class LetterController {
     try {
       const request: CreateLetterRequest = {
         ...req.body,
-        penerima_id: parseInt(req.body.penerima_id),
-      };      
+        user_id: parseInt(req.body.user_id),
+      };
 
       const response = await LetterService.create(request, req.file);
-      res.status(200).json({ data: response });
+      const simplifiedResponse = {
+        ...response,
+        penerima: response.penerima.nama_instansi,
+      };
+      res.status(200).json({ data: simplifiedResponse });
     } catch (e) {
       next(e);
     }
@@ -26,7 +34,7 @@ export class LetterController {
     try {
       const nomorRegistrasi = parseInt(req.params.nomor_registrasi);
       const response = await LetterService.get(nomorRegistrasi);
-      res.status(200).json({ data: response });
+      res.status(200).json({ data: response } as SingleLetterResponse);
     } catch (e) {
       next(e);
     }
@@ -37,9 +45,7 @@ export class LetterController {
       const nomorRegistrasi = parseInt(req.params.nomor_registrasi);
       const request: UpdateLetterRequest = {
         ...req.body,
-        penerima_id: req.body.penerima_id
-          ? parseInt(req.body.penerima_id)
-          : undefined,
+        user_id: req.body.user_id ? parseInt(req.body.user_id) : undefined,
       };
 
       const response = await LetterService.update(
@@ -47,7 +53,7 @@ export class LetterController {
         request,
         req.file
       );
-      res.status(200).json({ data: response });
+      res.status(200).json({ data: response } as SingleLetterResponse);
     } catch (e) {
       next(e);
     }
@@ -66,7 +72,13 @@ export class LetterController {
         nomorRegistrasi,
         request
       );
-      res.status(200).json({ data: response });
+      res.status(200).json({
+        data: {
+          nomor_registrasi: response.nomor_registrasi,
+          status: response.status,
+          updated_at: response.updated_at,
+        },
+      } as StatusUpdateResponse);
     } catch (e) {
       next(e);
     }
@@ -76,7 +88,7 @@ export class LetterController {
     try {
       const nomorRegistrasi = parseInt(req.params.nomor_registrasi);
       await LetterService.delete(nomorRegistrasi);
-      res.status(200).json({ data: "OK" });
+      res.status(200).json({ data: "OK" } as DeleteLetterResponse);
     } catch (e) {
       next(e);
     }
@@ -85,6 +97,19 @@ export class LetterController {
   static async list(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const response = await LetterService.list();
+      res.status(200).json({ data: response });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  static async listMyLetters(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const response = await LetterService.list(req.user?.id);
       res.status(200).json({ data: response });
     } catch (e) {
       next(e);

@@ -1,4 +1,4 @@
-import { Letter, Receiver } from "@prisma/client";
+import { Letter, User } from "@prisma/client";
 
 export type LetterResponse = {
   id: number;
@@ -6,15 +6,15 @@ export type LetterResponse = {
   pengirim: string;
   tujuan: string;
   nomor_surat: string;
-  tanggal_masuk: Date;
-  tanggal_surat: Date;
+  tanggal_masuk: string;
+  tanggal_surat: string;
   perihal: string;
   file_url: string;
-  status: string;
+  status: "pending" | "diterima";
   penerima: {
-    id: number;
-    nama: string;
-    email: string;
+    user_id: number;
+    nama_instansi: string;
+    email_instansi: string;
   };
   created_at: Date;
   updated_at: Date;
@@ -27,7 +27,8 @@ export type CreateLetterRequest = {
   tanggal_masuk: string;
   tanggal_surat: string;
   perihal: string;
-  penerima_id: number;
+  user_id: number;
+  file?: File; 
 };
 
 export type UpdateLetterRequest = {
@@ -37,15 +38,16 @@ export type UpdateLetterRequest = {
   tanggal_masuk?: string;
   tanggal_surat?: string;
   perihal?: string;
-  penerima_id?: number;
+  user_id?: number;
+  file?: File;
 };
 
 export type UpdateStatusRequest = {
-  status: "pending" | "diterima" | "ditolak";
+  status: "pending" | "diterima";
 };
 
 export function toLetterResponse(
-  letter: Letter & { penerima: Receiver }
+  letter: Letter & { user: User }
 ): LetterResponse {
   return {
     id: letter.id,
@@ -57,13 +59,38 @@ export function toLetterResponse(
     tanggal_surat: letter.tanggal_surat,
     perihal: letter.perihal,
     file_url: letter.file_url,
-    status: letter.status,
+    status: letter.status as "pending" | "diterima",
     penerima: {
-      id: letter.penerima.id,
-      nama: letter.penerima.nama,
-      email: letter.penerima.email,
+      user_id: letter.user.id,
+      nama_instansi: letter.user.nama_instansi,
+      email_instansi: letter.user.email_instansi,
     },
-    created_at: letter.createdAt,
-    updated_at: letter.updatedAt,
+    created_at: letter.created_at,
+    updated_at: letter.updated_at,
   };
 }
+
+// Additional types for API responses
+export type LetterListResponse = {
+  data: LetterResponse[];
+};
+
+export type SingleLetterResponse = {
+  data: LetterResponse;
+};
+
+export type StatusUpdateResponse = {
+  data: {
+    nomor_registrasi: number;
+    status: "pending" | "diterima";
+    updated_at: Date;
+  };
+};
+
+export type DeleteLetterResponse = {
+  data: string;
+};
+
+export type ErrorResponse = {
+  errors: string;
+};
