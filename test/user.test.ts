@@ -2,210 +2,275 @@ import supertest from "supertest";
 import { web } from "../src/application/web";
 import { logger } from "../src/application/logging";
 import { UserTest } from "./test-util";
-import bcrypt from "bcrypt";
+import { UserRole } from "@prisma/client";
 
-describe("POST /api/users", () => {
-  afterEach(async () => {
-    await UserTest.delete();
-  });
+describe("User API", () => {
+  // Test data
+  const testUser = {
+    email_instansi: "test@instansi.go.id",
+    nama_instansi: "Test Instansi",
+    password: "testpassword123",
+  };
 
-  it("should reject register new user if request is invalid", async () => {
-    const response = await supertest(web).post("/api/users").send({
-      username: "",
-      password: "",
-      name: "",
-    });
+  const adminUser = {
+    email_instansi: "admin@instansi.go.id",
+    nama_instansi: "Admin Instansi",
+    password: "adminpassword123",
+    role: "admin" as UserRole,
+  };
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
+  let adminToken: string;
 
-  it("should register new user", async () => {
-    const response = await supertest(web).post("/api/users").send({
-      username: "test",
-      password: "test",
-      name: "test",
-    });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.username).toBe("test");
-    expect(response.body.data.name).toBe("test");
-  });
-});
-
-describe("POST /api/users/login", () => {
+  // Clean up before and after tests
   beforeEach(async () => {
-    await UserTest.create();
+    await UserTest.deleteAll();
+    adminToken = await UserTest.createAdminToken();
   });
 
   afterEach(async () => {
-    await UserTest.delete();
+    await UserTest.deleteAll();
   });
 
-  it("should be able to login", async () => {
-    const response = await supertest(web).post("/api/users/login").send({
-      username: "test",
-      password: "test",
+  describe("POST /api/users (Register)", () => {
+    it("should register new user", async () => {
+      const response = await supertest(web)
+        .post("/api/users")
+        .set("X-API-TOKEN", adminToken)
+        .send(testUser);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(201);
+      expect(response.body.data).toHaveProperty("id");
+      expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
+      expect(response.body.data.nama_instansi).toBe(testUser.nama_instansi);
+      expect(response.body.data.role).toBe("user"); // Default role
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.username).toBe("test");
-    expect(response.body.data.name).toBe("test");
-    expect(response.body.data.token).toBeDefined();
-  });
+    it("should reject duplicate email", async () => {
+      await UserTest.create(testUser);
 
-  it("should reject login user if username is wrong", async () => {
-    const response = await supertest(web).post("/api/users/login").send({
-      username: "salah",
-      password: "test",
+      const response = await supertest(web)
+        .post("/api/users")
+        .set("X-API-TOKEN", adminToken)
+        .send(testUser);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain("already registered");
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+    it("should reject invalid input", async () => {
+      const response = await supertest(web)
+        .post("/api/users")
+        .set("X-API-TOKEN", adminToken)
+        .send({
+          email_instansi: "invalid",
+          password: "short",
+          nama_instansi: "",
+        });
+
+      logger.debug(response.body);
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
   });
 
-  it("should reject login user if password is wrong", async () => {
-    const response = await supertest(web).post("/api/users/login").send({
-      username: "test",
-      password: "salah",
+  describe("POST /api/users/login", () => {
+    beforeEach(async () => {
+      await UserTest.create(testUser);
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-});
-
-describe("GET /api/users/current", () => {
-  beforeEach(async () => {
-    await UserTest.create();
-  });
-
-  afterEach(async () => {
-    await UserTest.delete();
-  });
-
-  it("should be able to get user", async () => {
-    const response = await supertest(web)
-      .get("/api/users/current")
-      .set("X-API-TOKEN", "test");
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.username).toBe("test");
-    expect(response.body.data.name).toBe("test");
-  });
-
-  it("should reject get user if token is invalid", async () => {
-    const response = await supertest(web)
-      .get("/api/users/current")
-      .set("X-API-TOKEN", "salah");
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-});
-
-describe("PATCH /api/users/current", () => {
-  beforeEach(async () => {
-    await UserTest.create();
-  });
-
-  afterEach(async () => {
-    await UserTest.delete();
-  });
-
-  it("should reject update user if request is invalid", async () => {
-    const response = await supertest(web)
-      .patch("/api/users/current")
-      .set("X-API-TOKEN", "test")
-      .send({
-        password: "",
-        name: "",
+    it("should login with valid credentials", async () => {
+      const response = await supertest(web).post("/api/users/login").send({
+        email_instansi: testUser.email_instansi,
+        password: testUser.password,
       });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.user.email_instansi).toBe(
+        testUser.email_instansi
+      );
+    });
 
-  it("should reject update user if token is wrong", async () => {
-    const response = await supertest(web)
-      .patch("/api/users/current")
-      .set("X-API-TOKEN", "salah")
-      .send({
-        password: "benar",
-        name: "benar",
+    it("should reject invalid password", async () => {
+      const response = await supertest(web).post("/api/users/login").send({
+        email_instansi: testUser.email_instansi,
+        password: "wrongpassword",
       });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
+      logger.debug(response.body);
+      expect(response.status).toBe(401);
+      expect(response.body.errors).toContain("Invalid credentials");
+    });
 
-  it("should be able to update user name", async () => {
-    const response = await supertest(web)
-      .patch("/api/users/current")
-      .set("X-API-TOKEN", "test")
-      .send({
-        name: "benar",
+    it("should reject non-existent email", async () => {
+      const response = await supertest(web).post("/api/users/login").send({
+        email_instansi: "nonexistent@instansi.go.id",
+        password: "anypassword",
       });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.name).toBe("benar");
+      logger.debug(response.body);
+      expect(response.status).toBe(401);
+      expect(response.body.errors).toContain("Invalid credentials");
+    });
   });
 
-  it("should be able to update user password", async () => {
-    const response = await supertest(web)
-      .patch("/api/users/current")
-      .set("X-API-TOKEN", "test")
-      .send({
-        password: "benar",
+  describe("GET /api/users/current", () => {
+    let token: string;
+
+    beforeEach(async () => {
+      await UserTest.create(testUser);
+      token = await UserTest.getToken(testUser.email_instansi);
+    });
+
+    it("should get current user with valid token", async () => {
+      const response = await supertest(web)
+        .get("/api/users/current")
+        .set("X-API-TOKEN", token);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
+    });
+
+    it("should reject without token", async () => {
+      const response = await supertest(web).get("/api/users/current");
+
+      logger.debug(response.body);
+      expect(response.status).toBe(401);
+    });
+
+    it("should reject with invalid token", async () => {
+      const response = await supertest(web)
+        .get("/api/users/current")
+        .set("X-API-TOKEN", "invalid");
+
+      logger.debug(response.body);
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("PATCH /api/users/current", () => {
+    let token: string;
+
+    beforeEach(async () => {
+      await UserTest.create(testUser);
+      token = await UserTest.getToken(testUser.email_instansi);
+    });
+
+    it("should update user profile", async () => {
+      const newName = "Updated Instansi Name";
+      const response = await supertest(web)
+        .patch("/api/users/current")
+        .set("X-API-TOKEN", token)
+        .send({ nama_instansi: newName });
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.nama_instansi).toBe(newName);
+    });
+
+    it("should update password", async () => {
+      const newPassword = "newpassword123";
+      const response = await supertest(web)
+        .patch("/api/users/current")
+        .set("X-API-TOKEN", token)
+        .send({ password: newPassword });
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+
+      // Verify password was changed
+      const loginResponse = await supertest(web).post("/api/users/login").send({
+        email_instansi: testUser.email_instansi,
+        password: newPassword,
       });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
+      expect(loginResponse.status).toBe(200);
+    });
 
-    const user = await UserTest.get();
-    expect(await bcrypt.compare("benar", user.password)).toBe(true);
-  });
-});
+    it("should reject invalid updates", async () => {
+      const response = await supertest(web)
+        .patch("/api/users/current")
+        .set("X-API-TOKEN", token)
+        .send({ nama_instansi: "" });
 
-describe("DELETE /api/users/current", () => {
-  beforeEach(async () => {
-    await UserTest.create();
-  });
-
-  afterEach(async () => {
-    await UserTest.delete();
+      logger.debug(response.body);
+      expect(response.status).toBe(400);
+    });
   });
 
-  it("should be able to logout", async () => {
-    const response = await supertest(web)
-      .delete("/api/users/current")
-      .set("X-API-TOKEN", "test");
+  describe("Admin Endpoints", () => {
+    let userToken: string;
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toBe("OK");
+    beforeEach(async () => {
+      await UserTest.create(testUser);
+      userToken = await UserTest.getToken(testUser.email_instansi);
+    });
 
-    const user = await UserTest.get();
-    expect(user.token).toBeNull();
-  });
+    describe("GET /api/users", () => {
+      it("should list all users for admin", async () => {
+        const response = await supertest(web)
+          .get("/api/users")
+          .set("X-API-TOKEN", adminToken);
 
-  it("should reject logout user if token is wrong", async () => {
-    const response = await supertest(web)
-      .delete("/api/users/current")
-      .set("X-API-TOKEN", "salah");
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+        expect(response.body.data.length).toBe(2);
+        expect(response.body.meta.total).toBe(2);
+      });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+      it("should reject for non-admin users", async () => {
+        const response = await supertest(web)
+          .get("/api/users")
+          .set("X-API-TOKEN", userToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(403);
+      });
+    });
+
+    describe("DELETE /api/users/:id", () => {
+      it("should delete user for admin", async () => {
+        const userToDelete = await UserTest.getUser(testUser.email_instansi);
+
+        const response = await supertest(web)
+          .delete(`/api/users/${userToDelete.id}`)
+          .set("X-API-TOKEN", adminToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+
+        // Verify user was deleted
+        const users = await UserTest.listUsers();
+        expect(users.length).toBe(1);
+      });
+
+      it("should reject delete for non-admin", async () => {
+        const userToDelete = await UserTest.getUser(testUser.email_instansi);
+
+        const response = await supertest(web)
+          .delete(`/api/users/${userToDelete.id}`)
+          .set("X-API-TOKEN", userToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(403);
+      });
+
+      it("should reject delete if user has letters", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+        await UserTest.createLetterForUser(user.id);
+
+        const response = await supertest(web)
+          .delete(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toContain("letters are assigned");
+      });
+    });
   });
 });

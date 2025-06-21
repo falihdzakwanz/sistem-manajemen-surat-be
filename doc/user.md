@@ -11,7 +11,7 @@
 ### Register User (Development/Admin Only)
 **Endpoint**: `POST /api/users`  
 **Headers**:  
-- `X-API-TOKEN`: Admin token (required for production)
+- `X-API-TOKEN`: `<token>`
 
 **Request**:
 ```json
@@ -95,7 +95,7 @@
 
 **Headers**:
 
-**Authorization**: `Bearer <token>`
+- `X-API-TOKEN`: `<token>`
 
 **Success Response (200)**:
 
@@ -116,7 +116,7 @@
 
 **Headers**:
 
-**Authorization**: `Bearer <token>`
+- `X-API-TOKEN`: `<token>`
 
 **Request**:
 
@@ -143,7 +143,7 @@
 
 **Headers**:
 
-**Authorization**: `Bearer <admin_token>`
+- `X-API-TOKEN`: `<token>`
 
 **Success Response (200)**:
 
@@ -172,7 +172,7 @@
 
 **Headers**:
 
-**Authorization**: `Bearer <admin_token>`
+- `X-API-TOKEN`: `<token>`
 
 **Success Response (200)**:
 
