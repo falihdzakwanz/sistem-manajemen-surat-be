@@ -131,7 +131,18 @@ export class UserService {
   }
 
   // Admin Methods
-  static async listUsers(page: number = 1, pageSize: number = 10) {
+  static async listUsers(
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<{
+    data: Array<UserResponse & { total_surat: number }>;
+    meta: {
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    };
+  }> {
     const [users, total] = await Promise.all([
       prismaClient.user.findMany({
         skip: (page - 1) * pageSize,
@@ -148,7 +159,12 @@ export class UserService {
 
     return {
       data: users.map((user) => ({
-        ...toUserResponse(user),
+        id: user.id,
+        email_instansi: user.email_instansi,
+        nama_instansi: user.nama_instansi,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
         total_surat: user._count.letters,
       })),
       meta: {
@@ -159,6 +175,7 @@ export class UserService {
       },
     };
   }
+
   static async deleteUser(id: number): Promise<void> {
     const user = await prismaClient.user.findUnique({
       where: { id },

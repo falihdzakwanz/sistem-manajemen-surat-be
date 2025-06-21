@@ -68,11 +68,7 @@ export class UserController {
   }
 
   // Update Current User
-  static async update(
-    req: UserRequest,
-    res: Response,
-    next: NextFunction
-  ) {
+  static async update(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const request: UpdateUserRequest = req.body;
       const response = await UserService.updateCurrent(req.user!, request);
@@ -90,22 +86,14 @@ export class UserController {
   // Admin: List All Users
   static async list(req: UserRequest, res: Response, next: NextFunction) {
     try {
-      const { users, total } = await UserService.listUsers();
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 10;
+
+      const result = await UserService.listUsers(page, pageSize);
+
       res.status(200).json({
-        data: users.map((user) => ({
-          id: user.id,
-          email_instansi: user.email_instansi,
-          nama_instansi: user.nama_instansi,
-          role: user.role,
-          total_surat: user.total_surat, // Now comes directly from service
-          created_at: user.created_at,
-        })),
-        meta: {
-          total,
-          page: 1,
-          pageSize: users.length,
-          totalPages: Math.ceil(total / 10), // Assuming default page size 10
-        },
+        data: result.data,
+        meta: result.meta,
       });
     } catch (e) {
       next(e);
