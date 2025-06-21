@@ -1,9 +1,9 @@
 import {
   CreateUserRequest,
   LoginUserRequest,
-  toUserResponse,
   UpdateUserRequest,
   UserResponse,
+  toUserResponse,
 } from "../model/user-model";
 import { Validation } from "../validation/validation";
 import { UserValidation } from "../validation/user-validation";
@@ -11,45 +11,51 @@ import { prismaClient } from "../application/database";
 import { ResponseError } from "../error/response-error";
 import bcrypt from "bcrypt";
 import { v4 as uuid } from "uuid";
-import { User } from "@prisma/client";
+import { User, UserRole } from "@prisma/client";
 
 export class UserService {
+  // Auth Methods
   static async register(request: CreateUserRequest): Promise<UserResponse> {
     const registerRequest = Validation.validate(
       UserValidation.REGISTER,
       request
     );
 
-    const totalUserWithSameUsername = await prismaClient.user.count({
-      where: {
-        username: registerRequest.username,
-      },
+    const emailExists = await prismaClient.user.count({
+      where: { email_instansi: registerRequest.email_instansi },
     });
 
-    if (totalUserWithSameUsername != 0) {
-      throw new ResponseError(400, "Username already exists");
+    if (emailExists !== 0) {
+      throw new ResponseError(400, "Email already registered");
     }
 
-    registerRequest.password = await bcrypt.hash(registerRequest.password, 10);
+    const hashedPassword = await bcrypt.hash(registerRequest.password, 10);
 
     const user = await prismaClient.user.create({
-      data: registerRequest,
+      data: {
+        email_instansi: registerRequest.email_instansi,
+        password: hashedPassword,
+        nama_instansi: registerRequest.nama_instansi,
+        role: registerRequest.role as UserRole,
+      },
     });
 
     return toUserResponse(user);
   }
 
-  static async login(request: LoginUserRequest): Promise<UserResponse> {
+  static async login(
+    request: LoginUserRequest
+  ): Promise<{ token: string; user: UserResponse }> {
     const loginRequest = Validation.validate(UserValidation.LOGIN, request);
 
     let user = await prismaClient.user.findUnique({
       where: {
-        username: loginRequest.username,
+        email_instansi: loginRequest.email_instansi,
       },
     });
 
     if (!user) {
-      throw new ResponseError(401, "Username or password is wrong");
+      throw new ResponseError(401, "Invalid credentials");
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -57,35 +63,46 @@ export class UserService {
       user.password
     );
     if (!isPasswordValid) {
-      throw new ResponseError(401, "Username or password is wrong");
+      throw new ResponseError(401, "Invalid credentials");
     }
 
+    const token = uuid();
     user = await prismaClient.user.update({
       where: {
-        username: loginRequest.username,
+        id: user.id,
       },
       data: {
-        token: uuid(),
+        token,
       },
     });
 
-    const response = toUserResponse(user);
-    response.token = user.token!;
-    return response;
+    return {
+      token,
+      user: toUserResponse(user),
+    };
   }
 
-  static async get(user: User): Promise<UserResponse> {
-    return toUserResponse(user);
+  // User Methods
+  // Get Current User
+  static async getCurrent(user: User): Promise<UserResponse> {
+    const total_surat = await prismaClient.letter.count({
+      where: { user_id: user.id },
+    });
+
+    return {
+      ...toUserResponse(user),
+      total_surat,
+    };
   }
 
-  static async update(
+  static async updateCurrent(
     user: User,
     request: UpdateUserRequest
   ): Promise<UserResponse> {
     const updateRequest = Validation.validate(UserValidation.UPDATE, request);
 
-    if (updateRequest.name) {
-      user.name = updateRequest.name;
+    if (updateRequest.nama_instansi) {
+      user.nama_instansi = updateRequest.nama_instansi;
     }
 
     if (updateRequest.password) {
@@ -94,7 +111,7 @@ export class UserService {
 
     const result = await prismaClient.user.update({
       where: {
-        username: user.username,
+        id: user.id,
       },
       data: user,
     });
@@ -102,16 +119,65 @@ export class UserService {
     return toUserResponse(result);
   }
 
-  static async logout(user: User): Promise<UserResponse> {
-    const result = await prismaClient.user.update({
+  static async logout(user: User): Promise<void> {
+    await prismaClient.user.update({
       where: {
-        username: user.username,
+        id: user.id,
       },
       data: {
         token: null,
       },
     });
+  }
 
-    return toUserResponse(result);
+  // Admin Methods
+  static async listUsers(page: number = 1, pageSize: number = 10) {
+    const [users, total] = await Promise.all([
+      prismaClient.user.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          _count: {
+            select: { letters: true },
+          },
+        },
+        orderBy: { created_at: "desc" },
+      }),
+      prismaClient.user.count(),
+    ]);
+
+    return {
+      data: users.map((user) => ({
+        ...toUserResponse(user),
+        total_surat: user._count.letters,
+      })),
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+  }
+  static async deleteUser(id: number): Promise<void> {
+    const user = await prismaClient.user.findUnique({
+      where: { id },
+      include: { _count: { select: { letters: true } } },
+    });
+
+    if (!user) {
+      throw new ResponseError(404, "User not found");
+    }
+
+    if (user._count.letters > 0) {
+      throw new ResponseError(
+        400,
+        `Cannot delete user: ${user._count.letters} letters are assigned`
+      );
+    }
+
+    await prismaClient.user.delete({
+      where: { id },
+    });
   }
 }

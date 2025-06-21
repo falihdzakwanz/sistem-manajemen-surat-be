@@ -1,24 +1,23 @@
 import express from "express";
 import { authMiddleware } from "../middleware/auth-middleware";
+import { adminMiddleware } from "../middleware/admin-middleware";
 import { UserController } from "../controller/user-controller";
-import { ReceiverController } from "../controller/receiver-controller";
 import { LetterController } from "../controller/letter-controller";
 import { upload } from "../validation/file-validation";
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
 
-// User API
+// User endpoints
 apiRouter.get("/api/users/current", UserController.get);
 apiRouter.patch("/api/users/current", UserController.update);
-apiRouter.delete("/api/users/current", UserController.logout);
+apiRouter.post("/api/users/logout", UserController.logout);
 
-// Receiver API
-apiRouter.post("/api/penerima", ReceiverController.create);
-apiRouter.put("/api/penerima/:id", ReceiverController.update);
-apiRouter.delete("/api/penerima/:id", ReceiverController.delete);
-apiRouter.get("/api/penerima/:id", ReceiverController.get);
-apiRouter.get("/api/penerima", ReceiverController.list);
+// Admin-only endpoints
+apiRouter.use(adminMiddleware);
+apiRouter.post("/api/users", UserController.register);
+apiRouter.get("/api/users", UserController.list);
+apiRouter.delete("/api/users/:id", UserController.delete);
 
 // Letter API
 apiRouter.post("/api/surat", upload.single("file"), LetterController.create);

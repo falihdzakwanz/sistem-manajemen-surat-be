@@ -7,7 +7,8 @@ export type UserResponse = {
   role: string;
   token?: string;
   created_at: Date;
-  updated_at: Date;
+  updated_at?: Date;
+  total_surat?: number;
 };
 
 export type CreateUserRequest = {
@@ -26,6 +27,11 @@ export type UpdateUserRequest = {
   nama_instansi?: string;
   password?: string;
 };
+
+export enum UserRole {
+  admin = "admin",
+  user = "user",
+}
 
 export function toUserResponse(user: User): UserResponse {
   return {
