@@ -109,7 +109,12 @@ export class LetterController {
     next: NextFunction
   ) {
     try {
-      const response = await LetterService.list(req.user?.id);
+      if (!req.user?.id) {
+        res.status(401).json({ error: "User not authenticated" });
+        return;
+      }
+
+      const response = await LetterService.list(req.user.id);
       res.status(200).json({ data: response });
     } catch (e) {
       next(e);

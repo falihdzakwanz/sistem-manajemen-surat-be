@@ -73,7 +73,6 @@ export class UserTest {
   static async createLetterForUser(userId: number): Promise<Letter> {
     return await prismaClient.letter.create({
       data: {
-        nomor_registrasi: Math.floor(Math.random() * 10000),
         pengirim: "Test Sender",
         tujuan: "Test Receiver",
         nomor_surat: "001/2023",
@@ -88,110 +87,106 @@ export class UserTest {
   }
 }
 
-// export class LetterTest {
-//   static async deleteAll() {
-//     await prismaClient.letter.deleteMany();
-//   }
+export class LetterTest {
+  static async deleteAll() {
+    await prismaClient.letter.deleteMany();
+  }
 
-//   static async cleanupFiles() {
-//     const uploadDir = path.join(process.cwd(), "uploads");
+  static async cleanupFiles() {
+    const uploadDir = path.join(process.cwd(), "uploads");
 
-//     if (!fs.existsSync(uploadDir)) {
-//       return;
-//     }
+    if (!fs.existsSync(uploadDir)) {
+      return;
+    }
 
-//     const files = fs.readdirSync(uploadDir);
+    const files = fs.readdirSync(uploadDir);
 
-//     for (const file of files) {
-//       const filePath = path.join(uploadDir, file);
-//       try {
-//         if (
-//           file.endsWith(".pdf") ||
-//           file.endsWith(".docx") ||
-//           file.endsWith(".txt")
-//         ) {
-//           fs.unlinkSync(filePath);
-//         }
-//       } catch (err) {
-//         console.error(`Failed to delete ${filePath}:`, err);
-//       }
-//     }
-//   }
-//   static getTestFile(type: "pdf" | "docx" | "txt" = "pdf"): Buffer {
-//     // Generate minimal valid files for testing
-//     switch (type) {
-//       case "pdf":
-//         // Minimal PDF file
-//         return Buffer.from(
-//           "%PDF-1.0\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n"
-//         );
-//       case "docx":
-//         // Minimal DOCX file (ZIP header)
-//         return Buffer.from(
-//           "PK\x03\x04\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-//         );
-//       case "txt":
-//         // Simple text file
-//         return Buffer.from(
-//           "This is a test text file content.\nSecond line of text."
-//         );
-//       default:
-//         throw new Error(`Unsupported file type: ${type}`);
-//     }
-//   }
+    for (const file of files) {
+      const filePath = path.join(uploadDir, file);
+      try {
+        if (
+          file.endsWith(".pdf") ||
+          file.endsWith(".docx") ||
+          file.endsWith(".txt")
+        ) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (err) {
+        console.error(`Failed to delete ${filePath}:`, err);
+      }
+    }
+  }
 
-//   static getLargeFile(): Buffer {
-//     // Generate a 11MB buffer for size testing
-//     return Buffer.alloc(11 * 1024 * 1024, "x");
-//   }
+  static getTestFile(type: "pdf" | "docx" | "txt" = "pdf"): Buffer {
+    switch (type) {
+      case "pdf":
+        return Buffer.from(
+          "%PDF-1.0\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n"
+        );
+      case "docx":
+        return Buffer.from(
+          "PK\x03\x04\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        );
+      case "txt":
+        return Buffer.from(
+          "This is a test text file content.\nSecond line of text."
+        );
+      default:
+        throw new Error(`Unsupported file type: ${type}`);
+    }
+  }
 
-//   static async create(
-//     receiverId: number,
-//     data?: Partial<Letter>
-//   ): Promise<Letter> {
-//     const fileName = data?.file_url || `test-${uuid()}.pdf`;
-//     const filePath = path.join("uploads", fileName);
+  static getLargeFile(): Buffer {
+    return Buffer.alloc(11 * 1024 * 1024, "x");
+  }
 
-//     if (!fs.existsSync("uploads")) {
-//       fs.mkdirSync("uploads");
-//     }
+  static async create(userId: number, data?: Partial<Letter>): Promise<Letter> {
+    const fileName = data?.file_url || `test-${uuid()}.pdf`;
+    const filePath = path.join("uploads", fileName);
 
-//     fs.writeFileSync(filePath, this.getTestFile());
+    if (!fs.existsSync("uploads")) {
+      fs.mkdirSync("uploads");
+    }
 
-//     return await prismaClient.letter.create({
-//       data: {
-//         pengirim: data?.pengirim || "Kementerian Test",
-//         tujuan: data?.tujuan || "Dinas Test",
-//         nomor_surat: data?.nomor_surat || "001/2023",
-//         tanggal_masuk: data?.tanggal_masuk || new Date(),
-//         tanggal_surat: data?.tanggal_surat || new Date(),
-//         perihal: data?.perihal || "Surat Test",
-//         file_url: filePath,
-//         status: data?.status || "pending",
-//         penerima_id: receiverId,
-//       },
-//     });
-//   }
+    fs.writeFileSync(filePath, this.getTestFile());
 
-//   static async get(id: number): Promise<Letter | null> {
-//     return await prismaClient.letter.findUnique({
-//       where: { id },
-//       include: { penerima: true },
-//     });
-//   }
+    return await prismaClient.letter.create({
+      data: {
+        pengirim: data?.pengirim || "Kementerian Test",
+        tujuan: data?.tujuan || "Dinas Test",
+        nomor_surat: data?.nomor_surat || "001/2023",
+        tanggal_masuk: data?.tanggal_masuk || "23-10-2025",
+        tanggal_surat: data?.tanggal_surat || "23-10-2025",
+        perihal: data?.perihal || "Surat Test",
+        file_url: filePath,
+        status: data?.status || "pending",
+        user_id: userId,
+      },
+      include: { user: true },
+    });
+  }
 
-//   static async createWithReceiver(data?: Partial<Letter>): Promise<{
-//     letter: Letter;
-//     receiver: Receiver;
-//   }> {
-//     const receiver = await prismaClient.receiver.create({
-//       data: {
-//         nama: "Test Receiver",
-//         email: `test-${uuid()}@example.com`,
-//       },
-//     });
+  static async get(id: number): Promise<Letter | null> {
+    return await prismaClient.letter.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+  }
 
-//     const letter = await this.create(receiver.id, data);
-//     return { letter, receiver };
-//   }
-// }
+  static async createWithUser(data?: Partial<Letter>): Promise<{
+    letter: Letter;
+    user: User;
+  }> {
+    const user = await prismaClient.user.create({
+      data: {
+        email_instansi: `test-${uuid()}@example.com`,
+        nama_instansi: "Test User",
+        password: "testpassword",
+        role: "user",
+      },
+    });
+
+    const letter = await this.create(user.id, data);
+    return { letter, user };
+  }
+}
