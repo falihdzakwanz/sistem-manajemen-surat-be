@@ -70,7 +70,8 @@ export class LetterController {
 
       const response = await LetterService.updateStatus(
         nomorRegistrasi,
-        request
+        request,
+        req.user
       );
       res.status(200).json({
         data: {

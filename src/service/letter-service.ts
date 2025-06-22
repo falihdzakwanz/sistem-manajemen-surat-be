@@ -141,16 +141,16 @@ export class LetterService {
 
   static async updateStatus(
     nomorRegistrasi: number,
-    request: UpdateStatusRequest
+    request: UpdateStatusRequest,
+    currentUser?: { id: number; role: string }
   ): Promise<LetterResponse> {
     const updateRequest = Validation.validate(
       LetterValidation.UPDATE_STATUS,
       request
     );
 
-    const letter = await prismaClient.letter.update({
+    const letter = await prismaClient.letter.findUnique({
       where: { nomor_registrasi: nomorRegistrasi },
-      data: { status: updateRequest.status },
       include: { user: true },
     });
 
@@ -158,7 +158,32 @@ export class LetterService {
       throw new ResponseError(404, "Letter not found");
     }
 
-    return toLetterResponse(letter);
+    if (currentUser?.role !== "admin" && letter.user_id !== currentUser?.id) {
+      throw new ResponseError(
+        403,
+        currentUser
+          ? "You are not authorized to update this letter's status"
+          : "Authentication required to update letter status"
+      );
+    }
+
+    if (letter.status === "diterima" && updateRequest.status === "pending") {
+      throw new ResponseError(
+        400,
+        "Cannot revert from 'diterima' to 'pending' status"
+      );
+    }
+
+    const updatedLetter = await prismaClient.letter.update({
+      where: { nomor_registrasi: nomorRegistrasi },
+      data: {
+        status: updateRequest.status,
+        updated_at: new Date(),
+      },
+      include: { user: true },
+    });
+
+    return toLetterResponse(updatedLetter);
   }
 
   static async delete(nomorRegistrasi: number): Promise<void> {

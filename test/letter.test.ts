@@ -2,7 +2,6 @@ import supertest from "supertest";
 import { web } from "../src/application/web";
 import { logger } from "../src/application/logging";
 import { UserTest, LetterTest } from "./test-util";
-import fs from "fs";
 
 describe("Letter API", () => {
   let adminToken: string;
@@ -81,17 +80,27 @@ describe("Letter API", () => {
   });
 
   describe("PATCH /api/surat/:nomor_registrasi/status", () => {
-    it("should update letter status", async () => {
-      const { letter } = await LetterTest.createWithUser();
+    it("should update letter status by owner user", async () => {
+      const { nomor_registrasi } = await LetterTest.create(userId); // Surat milik user biasa
+
+      const response = await supertest(web)
+        .patch(`/api/surat/${nomor_registrasi}/status`)
+        .set("X-API-TOKEN", userToken) // Gunakan token user biasa
+        .send({ status: "diterima" });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.status).toBe("diterima");
+    });
+
+    it("should reject update by non-owner user", async () => {
+      const { letter } = await LetterTest.createWithUser(); // Surat milik user lain
 
       const response = await supertest(web)
         .patch(`/api/surat/${letter.nomor_registrasi}/status`)
-        .set("X-API-TOKEN", adminToken)
+        .set("X-API-TOKEN", userToken) // User biasa mencoba update surat orang lain
         .send({ status: "diterima" });
 
-      logger.debug(response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.status).toBe("diterima");
+      expect(response.status).toBe(403);
     });
   });
 
