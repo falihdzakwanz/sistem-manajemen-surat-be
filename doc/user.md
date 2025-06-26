@@ -8,7 +8,7 @@
 
 ## Authentication
 
-### Register User (Development/Admin Only)
+### Register User (Admin Only)
 **Endpoint**: `POST /api/users`  
 **Headers**:  
 - `X-API-TOKEN`: `<token>`
@@ -19,7 +19,7 @@
   "email_instansi": "kominfo@bandarlampung.go.id",
   "password": "securepassword",
   "nama_instansi": "Dinas Kominfo",
-  "role": "admin" // or "user"
+  "role": "admin" 
 }
 ```
 
@@ -165,6 +165,57 @@
   }
 }
 ```
+
+### Admin: Get User by Id
+
+**Endpoint**: `GET /api/users/{id}`
+
+**Headers**:
+
+- `X-API-TOKEN`: `<token>`
+
+**Success Response (200)**:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "email_instansi": "kominfo@bandarlampung.go.id",
+    "nama_instansi": "Dinas Kominfo",
+    "role": "admin",
+    "created_at": "2023-08-20T08:00:00Z",
+    "total_surat": 2
+  }
+}
+```
+
+### Admin: Update User by Id
+**Endpoint**: `PATCH /api/users/{id}`
+
+**Headers**:
+
+- `X-API-TOKEN`: `<token>`
+
+**Request**:
+
+```json
+{
+  "nama_instansi": "Updated Name",
+  "password": "newpassword" // Optional
+}
+```
+
+**Success Response (200)**:
+
+```json
+{
+  "data": {
+    "email_instansi": "kominfo@bandarlampung.go.id",
+    "nama_instansi": "Updated Name"
+  }
+}
+```
+
 
 ### Admin: Delete User
 

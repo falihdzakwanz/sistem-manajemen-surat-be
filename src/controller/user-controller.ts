@@ -67,7 +67,6 @@ export class UserController {
     }
   }
 
-  // UserController.ts
   static async getById(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const id = Number(req.params.id);
@@ -93,6 +92,23 @@ export class UserController {
     try {
       const request: UpdateUserRequest = req.body;
       const response = await UserService.updateCurrent(req.user!, request);
+      res.status(200).json({
+        data: {
+          email_instansi: response.email_instansi,
+          nama_instansi: response.nama_instansi,
+        },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  static async updateById(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number(req.params.id);
+      const request: UpdateUserRequest = req.body;
+      const response = await UserService.updateById(id, request);
+
       res.status(200).json({
         data: {
           email_instansi: response.email_instansi,

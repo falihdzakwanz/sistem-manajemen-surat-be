@@ -152,67 +152,6 @@ describe("User API", () => {
     });
   });
 
-  describe("GET /api/users/:id", () => {
-    let token: string;
-
-    beforeEach(async () => {
-      await UserTest.create(testUser);
-      token = await UserTest.getToken(testUser.email_instansi);
-    });
-
-    it("should get user by id for admin", async () => {
-      const user = await UserTest.getUser(testUser.email_instansi);
-
-      const response = await supertest(web)
-        .get(`/api/users/${user.id}`)
-        .set("X-API-TOKEN", adminToken);
-
-      logger.debug(response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.id).toBe(user.id);
-      expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
-      expect(response.body.data.nama_instansi).toBe(testUser.nama_instansi);
-      expect(response.body.data.role).toBe("user");
-      expect(response.body.data.total_surat).toBe(0);
-    });
-
-    it("should reject for non-admin users", async () => {
-      const user = await UserTest.getUser(testUser.email_instansi);
-
-      const response = await supertest(web)
-        .get(`/api/users/${user.id}`)
-        .set("X-API-TOKEN", token);
-
-      logger.debug(response.body);
-      expect(response.status).toBe(403);
-    });
-
-    it("should return 404 for non-existent user", async () => {
-      const nonExistentId = 999999;
-
-      const response = await supertest(web)
-        .get(`/api/users/${nonExistentId}`)
-        .set("X-API-TOKEN", adminToken);
-
-      logger.debug(response.body);
-      expect(response.status).toBe(404);
-      expect(response.body.errors).toContain("User not found");
-    });
-
-    it("should include total_surat count", async () => {
-      const user = await UserTest.getUser(testUser.email_instansi);
-      await UserTest.createLetterForUser(user.id);
-
-      const response = await supertest(web)
-        .get(`/api/users/${user.id}`)
-        .set("X-API-TOKEN", adminToken);
-
-      logger.debug(response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.total_surat).toBe(1);
-    });
-  });
-
   describe("PATCH /api/users/current", () => {
     let token: string;
 
@@ -287,6 +226,123 @@ describe("User API", () => {
         const response = await supertest(web)
           .get("/api/users")
           .set("X-API-TOKEN", userToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(403);
+      });
+    });
+
+    describe("GET /api/users/:id", () => {
+      it("should get user by id for admin", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const response = await supertest(web)
+          .get(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+        expect(response.body.data.id).toBe(user.id);
+        expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
+        expect(response.body.data.nama_instansi).toBe(testUser.nama_instansi);
+        expect(response.body.data.role).toBe("user");
+        expect(response.body.data.total_surat).toBe(0);
+      });
+
+      it("should reject for non-admin users", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const response = await supertest(web)
+          .get(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", userToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(403);
+      });
+
+      it("should return 404 for non-existent user", async () => {
+        const nonExistentId = 999999;
+
+        const response = await supertest(web)
+          .get(`/api/users/${nonExistentId}`)
+          .set("X-API-TOKEN", adminToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(404);
+        expect(response.body.errors).toContain("User not found");
+      });
+
+      it("should include total_surat count", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+        await UserTest.createLetterForUser(user.id);
+
+        const response = await supertest(web)
+          .get(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken);
+
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+        expect(response.body.data.total_surat).toBe(1);
+      });
+    });
+
+    describe("PATCH /api/users/:id", () => {
+      it("should update user profile", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const newName = "Updated Instansi Name Using Admin";
+        const response = await supertest(web)
+          .patch(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken)
+          .send({ nama_instansi: newName });
+
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+        expect(response.body.data.nama_instansi).toBe(newName);
+      });
+
+      it("should update password", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const newPassword = "newpassword123";
+        const response = await supertest(web)
+          .patch(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken)
+          .send({ password: newPassword });
+
+        logger.debug(response.body);
+        expect(response.status).toBe(200);
+
+        const loginResponse = await supertest(web)
+          .post("/api/users/login")
+          .send({
+            email_instansi: testUser.email_instansi,
+            password: newPassword,
+          });
+
+        expect(loginResponse.status).toBe(200);
+      });
+
+      it("should reject invalid updates", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const response = await supertest(web)
+          .patch(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", adminToken)
+          .send({ nama_instansi: "" });
+
+        logger.debug(response.body);
+        expect(response.status).toBe(400);
+      });
+
+      it("should reject non-admin users", async () => {
+        const user = await UserTest.getUser(testUser.email_instansi);
+
+        const newName = "Updated Instansi Name Using Admin";
+        const response = await supertest(web)
+          .patch(`/api/users/${user.id}`)
+          .set("X-API-TOKEN", userToken)
+          .send({ nama_instansi: newName });
 
         logger.debug(response.body);
         expect(response.status).toBe(403);

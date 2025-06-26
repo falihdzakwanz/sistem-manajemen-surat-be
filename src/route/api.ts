@@ -25,6 +25,7 @@ apiRouter.use(adminMiddleware);
 apiRouter.post("/api/users", UserController.register);
 apiRouter.get("/api/users", UserController.list);
 apiRouter.get("/api/users/:id", UserController.getById);
+apiRouter.patch("/api/users/:id", UserController.updateById);
 apiRouter.delete("/api/users/:id", UserController.delete);
 
 // Letter API

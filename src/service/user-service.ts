@@ -14,7 +14,6 @@ import { v4 as uuid } from "uuid";
 import { User, UserRole } from "@prisma/client";
 
 export class UserService {
-  // Auth Methods
   static async register(request: CreateUserRequest): Promise<UserResponse> {
     const registerRequest = Validation.validate(
       UserValidation.REGISTER,
@@ -82,8 +81,6 @@ export class UserService {
     };
   }
 
-  // User Methods
-  // Get Current User
   static async getCurrent(user: User): Promise<UserResponse> {
     const total_surat = await prismaClient.letter.count({
       where: { user_id: user.id },
@@ -218,5 +215,37 @@ export class UserService {
       ...toUserResponse(user),
       total_surat: user._count.letters,
     };
+  }
+
+  static async updateById(
+    id: number,
+    request: UpdateUserRequest
+  ): Promise<UserResponse> {
+    const updateRequest = Validation.validate(UserValidation.UPDATE, request);
+
+    const user = await prismaClient.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new ResponseError(404, "User not found");
+    }
+
+    if (updateRequest.nama_instansi) {
+      user.nama_instansi = updateRequest.nama_instansi;
+    }
+
+    if (updateRequest.password) {
+      user.password = await bcrypt.hash(updateRequest.password, 10);
+    }
+
+    const result = await prismaClient.user.update({
+      where: {
+        id: user.id,
+      },
+      data: user,
+    });
+
+    return toUserResponse(result);
   }
 }
