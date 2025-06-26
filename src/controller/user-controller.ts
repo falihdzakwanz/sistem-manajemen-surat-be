@@ -67,6 +67,27 @@ export class UserController {
     }
   }
 
+  // UserController.ts
+  static async getById(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number(req.params.id);
+      const response = await UserService.getById(id);
+
+      res.status(200).json({
+        data: {
+          id: response.id,
+          email_instansi: response.email_instansi,
+          nama_instansi: response.nama_instansi,
+          role: response.role,
+          created_at: response.created_at,
+          total_surat: response.total_surat,
+        },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+
   // Update Current User
   static async update(req: UserRequest, res: Response, next: NextFunction) {
     try {

@@ -197,4 +197,26 @@ export class UserService {
       where: { id },
     });
   }
+
+  static async getById(
+    id: number
+  ): Promise<UserResponse & { total_surat: number }> {
+    const user = await prismaClient.user.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { letters: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new ResponseError(404, "User not found");
+    }
+
+    return {
+      ...toUserResponse(user),
+      total_surat: user._count.letters,
+    };
+  }
 }

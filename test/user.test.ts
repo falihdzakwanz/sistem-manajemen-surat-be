@@ -152,6 +152,67 @@ describe("User API", () => {
     });
   });
 
+  describe("GET /api/users/:id", () => {
+    let token: string;
+
+    beforeEach(async () => {
+      await UserTest.create(testUser);
+      token = await UserTest.getToken(testUser.email_instansi);
+    });
+
+    it("should get user by id for admin", async () => {
+      const user = await UserTest.getUser(testUser.email_instansi);
+
+      const response = await supertest(web)
+        .get(`/api/users/${user.id}`)
+        .set("X-API-TOKEN", adminToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.id).toBe(user.id);
+      expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
+      expect(response.body.data.nama_instansi).toBe(testUser.nama_instansi);
+      expect(response.body.data.role).toBe("user");
+      expect(response.body.data.total_surat).toBe(0);
+    });
+
+    it("should reject for non-admin users", async () => {
+      const user = await UserTest.getUser(testUser.email_instansi);
+
+      const response = await supertest(web)
+        .get(`/api/users/${user.id}`)
+        .set("X-API-TOKEN", token);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
+    });
+
+    it("should return 404 for non-existent user", async () => {
+      const nonExistentId = 999999;
+
+      const response = await supertest(web)
+        .get(`/api/users/${nonExistentId}`)
+        .set("X-API-TOKEN", adminToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toContain("User not found");
+    });
+
+    it("should include total_surat count", async () => {
+      const user = await UserTest.getUser(testUser.email_instansi);
+      await UserTest.createLetterForUser(user.id);
+
+      const response = await supertest(web)
+        .get(`/api/users/${user.id}`)
+        .set("X-API-TOKEN", adminToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.total_surat).toBe(1);
+    });
+  });
+
   describe("PATCH /api/users/current", () => {
     let token: string;
 
