@@ -1,7 +1,8 @@
 import { prismaClient } from "../application/database";
+import { AdminDashboardStats, UserDashboardStats } from "../type/dashboard-stats.type";
 
 export class DashboardService {
-  static async getAdminStats() {
+  static async getAdminStats(): Promise<AdminDashboardStats> {
     const [totalSurat, totalUsers, recentLetters] = await Promise.all([
       prismaClient.letter.count(),
       prismaClient.user.count(),
@@ -32,7 +33,7 @@ export class DashboardService {
     };
   }
 
-  static async getUserStats(userId: number) {
+  static async getUserStats(userId: number): Promise<UserDashboardStats> {
     const [totalSurat, recentLetters] = await Promise.all([
       prismaClient.letter.count({
         where: { user_id: userId },
