@@ -3,7 +3,6 @@ import { z } from "zod";
 export class LetterValidation {
   static readonly CREATE = z.object({
     pengirim: z.string().min(1).max(100),
-    tujuan: z.string().min(1).max(100),
     nomor_surat: z.string().min(1).max(50),
     tanggal_masuk: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, {
       message: "Date must be in DD-MM-YYYY format",
@@ -17,7 +16,6 @@ export class LetterValidation {
 
   static readonly UPDATE = z.object({
     pengirim: z.string().min(1).max(100).optional(),
-    tujuan: z.string().min(1).max(100).optional(),
     nomor_surat: z.string().min(1).max(50).optional(),
     tanggal_masuk: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, {
       message: "Date must be in DD-MM-YYYY format"

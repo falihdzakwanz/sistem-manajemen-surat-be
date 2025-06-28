@@ -55,17 +55,9 @@ export class LetterService {
 
     const filePath = await this.saveFile(file);
 
-    // Get the next registration number
-    const lastLetter = await prismaClient.letter.findFirst({
-      orderBy: { nomor_registrasi: "desc" },
-    });
-    const nextRegNumber = lastLetter ? lastLetter.nomor_registrasi + 1 : 1;
-
     const letter = await prismaClient.letter.create({
       data: {
-        nomor_registrasi: nextRegNumber,
         pengirim: createRequest.pengirim,
-        tujuan: createRequest.tujuan,
         nomor_surat: createRequest.nomor_surat,
         tanggal_masuk: createRequest.tanggal_masuk,
         tanggal_surat: createRequest.tanggal_surat,

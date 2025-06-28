@@ -13,7 +13,6 @@ Request Body (multipart/form-data) :
 ```json
 {
   "pengirim": "Kemendagri",
-  "tujuan": "Dinas Kesehatan Bandar Lampung",
   "nomor_surat": "001/2023",
   "tanggal_masuk": "14-06-2025",
   "tanggal_surat": "10-06-2025",
@@ -37,7 +36,11 @@ Response Body (Success):
     "perihal": "Permohonan Data",
     "status": "pending",
     "user_id": 3,
-    "penerima": "Dinas Kesehatan", // Auto dari nama_instansi user
+    "user": {
+      "id": 3,
+      "nama_instansi": "Dinas Pendidikan",
+      "email_instansi": "dinkes@bandarlampung.go.id"
+    },
     "file_url": "http://localhost:3000/uploads/surat-1.pdf",
     "created_at": "2023-08-10T10:00:00Z"
   }
@@ -70,15 +73,14 @@ Response Body (Success):
     {
       "id": 1,
       "nomor_registrasi": 1,
-      "tujuan": "Dinas Kesehatan Bandar Lampung",
       "nomor_surat": "001/2023",
       "tanggal_masuk": "14-06-2025",
       "tanggal_surat": "10-06-2025",
       "perihal": "Permohonan Data",
       "status": "pending",
       "file_url": "http://localhost:3000/uploads/surat-1.pdf",
-      "penerima": {
-        "user_id": 3,
+      "user": {
+        "id": 3,
         "nama_instansi": "Dinas Pendidikan",
         "email_instansi": "dinkes@bandarlampung.go.id"
       },
@@ -100,16 +102,15 @@ Response:
     {
       "id": 1,
       "nomor_registrasi": 1,
-      "tujuan": "Dinas Kesehatan Bandar Lampung",
       "nomor_surat": "001/2023",
       "tanggal_masuk": "14-06-2025",
       "tanggal_surat": "10-06-2025",
       "perihal": "Permohonan Data",
       "file_url": "http://localhost:3000/uploads/surat-1.pdf",
       "status": "diterima",
-      "penerima": {
-        "user_id": 3,
-        "nama_instansi": "Dinas kesehatan",
+      "user": {
+        "id": 3,
+        "nama_instansi": "Dinas Pendidikan",
         "email_instansi": "dinkes@bandarlampung.go.id"
       },
       "created_at": "2023-08-10T10:00:00Z",
@@ -141,9 +142,9 @@ Response Body (Success):
     "perihal": "Permohonan Data",
     "file_url": "http://localhost:3000/uploads/surat-1.pdf",
     "status": "pending",
-    "penerima": {
-      "user_id": 3,
-      "nama_instansi": "Dinas Kesehatan Bandar Lampung",
+    "user": {
+      "id": 3,
+      "nama_instansi": "Dinas Pendidikan",
       "email_instansi": "dinkes@bandarlampung.go.id"
     },
     "created_at": "2023-08-10T10:00:00Z",
@@ -210,7 +211,6 @@ Request Body:
 ```json
 {
   "pengirim": "Kemendagri RI", // Updated sender
-  "tujuan": "Dinas Kesehatan Kota Bandar Lampung", // Updated recipient
   "nomor_surat": "001-A/2023", // Updated letter number
   "tanggal_masuk": "15-06-2025", // Updated received date
   "tanggal_surat": "11-06-2025", // Updated letter date
@@ -228,13 +228,17 @@ Response Body (Success):
     "id": 1,
     "nomor_registrasi": 1,
     "pengirim": "Kemendagri RI",
-    "tujuan": "Dinas Kesehatan Kota Bandar Lampung",
     "nomor_surat": "001-A/2023",
     "tanggal_masuk": "15-06-2025",
     "tanggal_surat": "11-06-2025",
     "perihal": "Permohonan Data Sekunder",
     "file_url": "http://localhost:3000/uploads/surat-1-v2.pdf",
     "status": "pending",
+    "user": {
+      "id": 3,
+      "nama_instansi": "Dinas Pendidikan",
+      "email_instansi": "dinkes@bandarlampung.go.id"
+    },
     "updated_at": "2023-08-11T09:30:00Z"
   }
 }

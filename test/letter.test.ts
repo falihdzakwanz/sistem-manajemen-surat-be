@@ -37,7 +37,6 @@ describe("Letter API", () => {
         .post("/api/surat")
         .set("X-API-TOKEN", adminToken)
         .field("pengirim", "Kementerian Test")
-        .field("tujuan", "Dinas Test")
         .field("nomor_surat", "001/2023")
         .field("tanggal_masuk", "30-12-2025")
         .field("tanggal_surat", "30-12-2025")
@@ -66,7 +65,7 @@ describe("Letter API", () => {
 
   describe("GET /api/surat/:nomor_registrasi", () => {
     it("should get letter details", async () => {
-      const { letter } = await LetterTest.createWithUser();
+      const { user, letter } = await LetterTest.createWithUser();
 
       const response = await supertest(web)
         .get(`/api/surat/${letter.nomor_registrasi}`)
@@ -74,8 +73,23 @@ describe("Letter API", () => {
 
       logger.debug(response.body);
       expect(response.status).toBe(200);
+      expect(response.body.data.id).toBe(letter.id);
+      expect(response.body.data.pengirim).toBe(letter.pengirim);
+      expect(response.body.data.nomor_surat).toBe(letter.nomor_surat);
+      expect(response.body.data.tanggal_masuk).toBe(letter.tanggal_masuk);
+      expect(response.body.data.tanggal_surat).toBe(letter.tanggal_surat);
+      expect(response.body.data.perihal).toBe(letter.perihal);
       expect(response.body.data.nomor_registrasi).toBe(letter.nomor_registrasi);
-      expect(response.body.data.penerima).toBeDefined();
+      expect(response.body.data.file_url).toBe(letter.file_url);
+      expect(response.body.data.status).toBe(letter.status);
+      const responseCreatedAt = new Date(response.body.data.created_at);
+      const responseUpdatedAt = new Date(response.body.data.updated_at);
+      expect(responseCreatedAt).toEqual(letter.created_at);
+      expect(responseUpdatedAt).toEqual(letter.updated_at);
+      expect(response.body.data.user).toBeDefined();
+      expect(response.body.data.user.id).toBe(user.id);
+      expect(response.body.data.user.nama_instansi).toBe(user.nama_instansi);
+      expect(response.body.data.user.email_instansi).toBe(user.email_instansi);
     });
   });
 
@@ -85,7 +99,7 @@ describe("Letter API", () => {
 
       const response = await supertest(web)
         .patch(`/api/surat/${nomor_registrasi}/status`)
-        .set("X-API-TOKEN", userToken) // Gunakan token user biasa
+        .set("X-API-TOKEN", userToken) 
         .send({ status: "diterima" });
 
       expect(response.status).toBe(200);
@@ -173,11 +187,11 @@ describe("Letter API", () => {
 
       const response = await supertest(web)
         .get("/api/surat/me")
-        .set("X-API-TOKEN", userToken); // Gunakan token user biasa
+        .set("X-API-TOKEN", userToken);
 
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1); // Hanya 1 surat (miliknya sendiri)
-      expect(response.body.data[0].penerima.user_id).toBe(userId); // Memastikan data yang kembali adalah miliknya
+      expect(response.body.data[0].user.id).toBe(userId); // Memastikan data yang kembali adalah miliknya
     });
   });
 });

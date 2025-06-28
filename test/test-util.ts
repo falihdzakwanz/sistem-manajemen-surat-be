@@ -74,7 +74,6 @@ export class UserTest {
     return await prismaClient.letter.create({
       data: {
         pengirim: "Test Sender",
-        tujuan: "Test Receiver",
         nomor_surat: "001/2023",
         tanggal_masuk: "01-01-2023",
         tanggal_surat: "01-01-2023",
@@ -153,7 +152,6 @@ export class LetterTest {
     return await prismaClient.letter.create({
       data: {
         pengirim: data?.pengirim || "Kementerian Test",
-        tujuan: data?.tujuan || "Dinas Test",
         nomor_surat: data?.nomor_surat || "001/2023",
         tanggal_masuk: data?.tanggal_masuk || "23-10-2025",
         tanggal_surat: data?.tanggal_surat || "23-10-2025",

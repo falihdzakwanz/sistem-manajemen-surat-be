@@ -20,11 +20,11 @@ export class LetterController {
       };
 
       const response = await LetterService.create(request, req.file);
-      const simplifiedResponse = {
-        ...response,
-        penerima: response.penerima.nama_instansi,
-      };
-      res.status(200).json({ data: simplifiedResponse });
+      // const simplifiedResponse = {
+      //   ...response,
+      //   penerima: response.penerima.nama_instansi,
+      // };
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }
@@ -98,7 +98,7 @@ export class LetterController {
   static async list(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const response = await LetterService.list();
-      res.status(200).json({ data: response });
+      res.status(200).json({ data: response } as LetterListResponse);
     } catch (e) {
       next(e);
     }
@@ -116,7 +116,7 @@ export class LetterController {
       }
 
       const response = await LetterService.list(req.user.id);
-      res.status(200).json({ data: response });
+      res.status(200).json({ data: response } as LetterListResponse);
     } catch (e) {
       next(e);
     }
