@@ -10,6 +10,7 @@ import {
 } from "../model/letter-model";
 import { LetterService } from "../service/letter-service";
 import { UserRequest } from "../type/user-request";
+import fs from "fs";
 
 export class LetterController {
   static async create(req: UserRequest, res: Response, next: NextFunction) {
@@ -20,10 +21,6 @@ export class LetterController {
       };
 
       const response = await LetterService.create(request, req.file);
-      // const simplifiedResponse = {
-      //   ...response,
-      //   penerima: response.penerima.nama_instansi,
-      // };
       res.status(200).json({ data: response });
     } catch (e) {
       next(e);
@@ -125,15 +122,23 @@ export class LetterController {
   static async download(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const nomorRegistrasi = parseInt(req.params.nomor_registrasi);
+
       const { filePath, fileName } = await LetterService.download(
-        nomorRegistrasi
+        nomorRegistrasi,
+        req.user!
       );
 
-      res.download(filePath, fileName, (err) => {
-        if (err) {
-          next(err);
-        }
-      });
+      res.setHeader("Access-Control-Allow-Origin", "http://localhost:3001");
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`
+      );
+      res.setHeader("Content-Type", "application/octet-stream");
+
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
     } catch (e) {
       next(e);
     }

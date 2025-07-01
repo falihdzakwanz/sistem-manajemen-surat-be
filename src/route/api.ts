@@ -19,6 +19,7 @@ apiRouter.patch(
   "/api/surat/:nomor_registrasi/status",
   LetterController.updateStatus
 );
+apiRouter.get("/api/surat/:nomor_registrasi/file", LetterController.download);
 
 // Admin-only endpoints
 apiRouter.use(adminMiddleware);
@@ -39,4 +40,3 @@ apiRouter.put(
 apiRouter.delete("/api/surat/:nomor_registrasi", LetterController.delete);
 apiRouter.get("/api/surat", LetterController.list);
 
-apiRouter.get("/api/surat/:nomor_registrasi/file", LetterController.download);

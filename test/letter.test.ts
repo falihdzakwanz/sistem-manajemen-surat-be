@@ -2,6 +2,7 @@ import supertest from "supertest";
 import { web } from "../src/application/web";
 import { logger } from "../src/application/logging";
 import { UserTest, LetterTest } from "./test-util";
+import fs from "fs";
 
 describe("Letter API", () => {
   let adminToken: string;
@@ -99,7 +100,7 @@ describe("Letter API", () => {
 
       const response = await supertest(web)
         .patch(`/api/surat/${nomor_registrasi}/status`)
-        .set("X-API-TOKEN", userToken) 
+        .set("X-API-TOKEN", userToken)
         .send({ status: "diterima" });
 
       expect(response.status).toBe(200);
@@ -161,7 +162,7 @@ describe("Letter API", () => {
         .set("X-API-TOKEN", adminToken);
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toBe("application/pdf");
+      expect(response.headers["content-type"]).toBe("application/octet-stream");
       expect(response.headers["content-disposition"]).toContain("attachment");
     });
   });
@@ -192,6 +193,88 @@ describe("Letter API", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1); // Hanya 1 surat (miliknya sendiri)
       expect(response.body.data[0].user.id).toBe(userId); // Memastikan data yang kembali adalah miliknya
+    });
+  });
+
+  describe("GET /api/surat/:nomor_registrasi/file", () => {
+    it("should download letter file for admin", async () => {
+      const { letter } = await LetterTest.createWithUser();
+
+      const response = await supertest(web)
+        .get(`/api/surat/${letter.nomor_registrasi}/file`)
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toBe("application/octet-stream");
+      expect(response.headers["content-disposition"]).toContain(
+        `attachment; filename="surat-${letter.nomor_registrasi}.pdf"`
+      );
+      expect(response.body).toBeInstanceOf(Buffer);
+    });
+
+    it("should download letter file for owner user", async () => {
+      const { nomor_registrasi } = await LetterTest.create(userId);
+
+      const response = await supertest(web)
+        .get(`/api/surat/${nomor_registrasi}/file`)
+        .set("X-API-TOKEN", userToken);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toBe("application/octet-stream");
+      expect(response.body).toBeInstanceOf(Buffer);
+    });
+
+    it("should reject download if letter not found", async () => {
+      const response = await supertest(web)
+        .get("/api/surat/999999/file")
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it("should reject download if file not exists on filesystem", async () => {
+      const { letter } = await LetterTest.createWithUser();
+      // Hapus file secara manual untuk simulasi
+      fs.unlinkSync(letter.file_url);
+
+      const response = await supertest(web)
+        .get(`/api/surat/${letter.nomor_registrasi}/file`)
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it("should reject download by non-owner user", async () => {
+      const { letter } = await LetterTest.createWithUser(); // Surat milik user lain
+
+      const response = await supertest(web)
+        .get(`/api/surat/${letter.nomor_registrasi}/file`)
+        .set("X-API-TOKEN", userToken); // User biasa mencoba download surat orang lain
+
+      expect(response.status).toBe(403);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it("should handle different file extensions correctly", async () => {
+      // Buat surat dengan file .docx
+      const { letter } = await LetterTest.createWithUser({
+        file_url: "test.docx",
+      });
+
+      // Simulasikan file .docx
+      fs.writeFileSync(letter.file_url, LetterTest.getTestFile("docx"));
+
+      const response = await supertest(web)
+        .get(`/api/surat/${letter.nomor_registrasi}/file`)
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toBe("application/octet-stream");
+      expect(response.headers["content-disposition"]).toContain(
+        `attachment; filename="surat-${letter.nomor_registrasi}.docx"`
+      );
     });
   });
 });

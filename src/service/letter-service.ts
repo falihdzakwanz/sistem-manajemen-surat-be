@@ -209,16 +209,27 @@ export class LetterService {
     return letters.map(toLetterResponse);
   }
 
-  static async download(nomorRegistrasi: number): Promise<{
+  static async download(
+    nomorRegistrasi: number,
+    user: User
+  ): Promise<{
     filePath: string;
     fileName: string;
   }> {
     const letter = await prismaClient.letter.findUnique({
       where: { nomor_registrasi: nomorRegistrasi },
+      include: { user: true },
     });
 
     if (!letter) {
       throw new ResponseError(404, "Letter not found");
+    }
+
+    if (letter.user.id !== user.id && user.role !== "admin") {
+      throw new ResponseError(
+        403,
+        "Forbidden: You don't have permission to access this letter"
+      );
     }
 
     if (!fs.existsSync(letter.file_url)) {
