@@ -6,7 +6,14 @@ import { apiRouter } from "../route/api";
 import { dashboardRouter } from "../route/dashboard-api";
 
 export const web = express();
-web.use(cors());
+web.use(
+  cors({
+    origin: "http://localhost:3001",
+    credentials: true, 
+    exposedHeaders: ["Content-Disposition"],
+    allowedHeaders: ["X-API-TOKEN", "Content-Type"],
+  })
+);
 web.use(express.json());
 web.use(publicRouter);
 web.use(dashboardRouter);

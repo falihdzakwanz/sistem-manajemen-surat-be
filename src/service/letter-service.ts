@@ -209,12 +209,16 @@ export class LetterService {
     return letters.map(toLetterResponse);
   }
 
-  static async download(nomorRegistrasi: number): Promise<{
+  static async download(
+    nomorRegistrasi: number,
+    user: User
+  ): Promise<{
     filePath: string;
     fileName: string;
   }> {
     const letter = await prismaClient.letter.findUnique({
       where: { nomor_registrasi: nomorRegistrasi },
+      include: { user: true },
     });
 
     if (!letter) {
@@ -224,6 +228,11 @@ export class LetterService {
     if (!fs.existsSync(letter.file_url)) {
       throw new ResponseError(404, "File not found");
     }
+
+    if (letter.user.id !== user.id && user.role !== "admin") {
+      throw new ResponseError(403, "Access denied");
+    }
+  
 
     const fileName = `surat-${letter.nomor_registrasi}${path.extname(
       letter.file_url

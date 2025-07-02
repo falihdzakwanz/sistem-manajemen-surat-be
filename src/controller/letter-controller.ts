@@ -20,10 +20,6 @@ export class LetterController {
       };
 
       const response = await LetterService.create(request, req.file);
-      // const simplifiedResponse = {
-      //   ...response,
-      //   penerima: response.penerima.nama_instansi,
-      // };
       res.status(200).json({ data: response });
     } catch (e) {
       next(e);
@@ -126,8 +122,11 @@ export class LetterController {
     try {
       const nomorRegistrasi = parseInt(req.params.nomor_registrasi);
       const { filePath, fileName } = await LetterService.download(
-        nomorRegistrasi
+        nomorRegistrasi,
+        req.user!
       );
+
+      res.header("Access-Control-Expose-Headers", "Content-Disposition");
 
       res.download(filePath, fileName, (err) => {
         if (err) {
