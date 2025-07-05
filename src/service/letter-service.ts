@@ -230,11 +230,9 @@ export class LetterService {
     if (letter.user.id !== user.id && user.role !== "admin") {
       throw new ResponseError(403, "Access denied");
     }
-  
 
-    const fileName = `surat-${letter.nomor_registrasi}${path.extname(
-      letter.file_url
-    )}`;
+    const fileName = path.basename(letter.file_url);
+
     return { filePath: letter.file_url, fileName };
   }
 }
