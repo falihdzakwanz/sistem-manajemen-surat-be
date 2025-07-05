@@ -8,12 +8,11 @@ import { upload } from "../validation/file-validation";
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
 
-// User endpoints
+
 apiRouter.get("/api/users/current", UserController.get);
 apiRouter.patch("/api/users/current", UserController.update);
 apiRouter.delete("/api/users/current", UserController.logout);
 
-// Letter API (accessible to all authenticated users)
 apiRouter.get("/api/surat/me", LetterController.listMyLetters);
 apiRouter.patch(
   "/api/surat/:nomor_registrasi/status",
@@ -22,7 +21,6 @@ apiRouter.patch(
 apiRouter.get("/api/surat/:nomor_registrasi", LetterController.get);
 apiRouter.get("/api/surat/:nomor_registrasi/file", LetterController.download);
 
-// Admin-only endpoints
 apiRouter.use(adminMiddleware);
 apiRouter.post("/api/users", UserController.register);
 apiRouter.get("/api/users", UserController.list);
@@ -30,7 +28,7 @@ apiRouter.get("/api/users/:id", UserController.getById);
 apiRouter.patch("/api/users/:id", UserController.updateById);
 apiRouter.delete("/api/users/:id", UserController.delete);
 
-// Letter API
+
 apiRouter.post("/api/surat", upload.single("file"), LetterController.create);
 apiRouter.put(
   "/api/surat/:nomor_registrasi",

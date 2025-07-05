@@ -106,7 +106,6 @@ export class LetterService {
 
     let filePath = existingLetter.file_url;
     if (file) {
-      // Delete old file
       if (fs.existsSync(existingLetter.file_url)) {
         fs.unlinkSync(existingLetter.file_url);
       }
@@ -187,7 +186,6 @@ export class LetterService {
       throw new ResponseError(404, "Letter not found");
     }
 
-    // Delete file
     if (fs.existsSync(letter.file_url)) {
       fs.unlinkSync(letter.file_url);
     }

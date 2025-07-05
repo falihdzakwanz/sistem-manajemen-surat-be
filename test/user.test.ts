@@ -5,7 +5,6 @@ import { UserTest } from "./test-util";
 import { UserRole } from "@prisma/client";
 
 describe("User API", () => {
-  // Test data
   const testUser = {
     email_instansi: "test@instansi.go.id",
     nama_instansi: "Test Instansi",
@@ -21,7 +20,6 @@ describe("User API", () => {
 
   let adminToken: string;
 
-  // Clean up before and after tests
   beforeEach(async () => {
     await UserTest.deleteAll();
     adminToken = await UserTest.createAdminToken();
@@ -43,7 +41,7 @@ describe("User API", () => {
       expect(response.body.data).toHaveProperty("id");
       expect(response.body.data.email_instansi).toBe(testUser.email_instansi);
       expect(response.body.data.nama_instansi).toBe(testUser.nama_instansi);
-      expect(response.body.data.role).toBe("user"); // Default role
+      expect(response.body.data.role).toBe("user");
     });
 
     it("should reject duplicate email", async () => {
@@ -182,7 +180,6 @@ describe("User API", () => {
       logger.debug(response.body);
       expect(response.status).toBe(200);
 
-      // Verify password was changed
       const loginResponse = await supertest(web).post("/api/users/login").send({
         email_instansi: testUser.email_instansi,
         password: newPassword,
@@ -360,7 +357,6 @@ describe("User API", () => {
         logger.debug(response.body);
         expect(response.status).toBe(200);
 
-        // Verify user was deleted
         const users = await UserTest.listUsers();
         expect(users.length).toBe(1);
       });

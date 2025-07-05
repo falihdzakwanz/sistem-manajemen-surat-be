@@ -68,7 +68,6 @@ export function toLetterResponse(
   };
 }
 
-// Additional types for API responses
 export type LetterListResponse = {
   data: LetterResponse[];
 };

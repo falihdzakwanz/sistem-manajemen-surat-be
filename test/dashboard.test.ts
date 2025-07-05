@@ -51,7 +51,7 @@ describe("DashboardService", () => {
 
       const stats = response.body.data;
       expect(stats.totalSurat).toBe(2);
-      expect(stats.totalUsers).toBe(2); // Admin + regular user
+      expect(stats.totalUsers).toBe(2);
       expect(stats.recentLetters.length).toBe(2);
       expect(stats.recentLetters[0]).toHaveProperty("id");
       expect(stats.recentLetters[0]).toHaveProperty("nomor_surat");
@@ -69,7 +69,7 @@ describe("DashboardService", () => {
       expect(response.status).toBe(200);
       const stats = response.body.data;
       expect(stats.totalSurat).toBe(0);
-      expect(stats.totalUsers).toBe(2); // Tetap menghitung user yang ada
+      expect(stats.totalUsers).toBe(2);
       expect(stats.recentLetters.length).toBe(0);
     });
 
@@ -84,12 +84,11 @@ describe("DashboardService", () => {
 
   describe("GET /api/dashboard/user", () => {
     it("should return user-specific statistics", async () => {
-      // Create 3 letters for this user
       await LetterTest.create(regularUser.id);
       await LetterTest.create(regularUser.id);
       await LetterTest.create(regularUser.id);
 
-      // Create 1 letter for another user (should not appear)
+
       const otherUser = await UserTest.create({
         email_instansi: "other@test.go.id",
         nama_instansi: "Other User",
@@ -109,7 +108,7 @@ describe("DashboardService", () => {
         regularUser.nama_instansi
       );
 
-      // Ensure no letters from other user
+
       const otherUserLetters = stats.recentLetters.filter(
         (letter: any) => letter.nama_instansi === otherUser.nama_instansi
       );
@@ -128,7 +127,7 @@ describe("DashboardService", () => {
     });
 
     it("should limit recent letters to 5", async () => {
-      // Create 6 letters for user
+
       for (let i = 0; i < 6; i++) {
         await LetterTest.create(regularUser.id);
       }
@@ -140,7 +139,7 @@ describe("DashboardService", () => {
       expect(response.status).toBe(200);
       const stats = response.body.data;
       expect(stats.totalSurat).toBe(6);
-      expect(stats.recentLetters.length).toBe(5); // Limited to 5
+      expect(stats.recentLetters.length).toBe(5);
     });
   });
 });

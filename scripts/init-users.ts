@@ -75,7 +75,6 @@ async function initUsers() {
   }
 }
 
-// Eksekusi langsung jika di-run via CLI
 if (require.main === module) {
   initUsers();
 }

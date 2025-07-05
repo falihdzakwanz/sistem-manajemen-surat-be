@@ -9,7 +9,7 @@ import { UserService } from "../service/user-service";
 import { UserRequest } from "../type/user-request";
 
 export class UserController {
-  // Register (Admin only)
+
   static async register(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const request: CreateUserRequest = req.body;
@@ -28,7 +28,6 @@ export class UserController {
     }
   }
 
-  // Login
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
       const request: LoginUserRequest = req.body;
@@ -48,8 +47,6 @@ export class UserController {
       next(e);
     }
   }
-
-  // Get Current User
   static async get(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user!;
@@ -87,7 +84,6 @@ export class UserController {
     }
   }
 
-  // Update Current User
   static async update(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const request: UpdateUserRequest = req.body;
@@ -120,7 +116,6 @@ export class UserController {
     }
   }
 
-  // Admin: List All Users
   static async list(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -137,7 +132,6 @@ export class UserController {
     }
   }
 
-  // Admin: Delete User
   static async delete(req: UserRequest, res: Response, next: NextFunction) {
     try {
       const id = Number(req.params.id);
@@ -150,7 +144,6 @@ export class UserController {
     }
   }
 
-  // Logout
   static async logout(req: UserRequest, res: Response, next: NextFunction) {
     try {
       await UserService.logout(req.user!);

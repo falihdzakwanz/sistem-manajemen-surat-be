@@ -54,7 +54,7 @@ describe("Letter API", () => {
       const response = await supertest(web)
         .post("/api/surat")
         .set("X-API-TOKEN", adminToken)
-        .field("user_id", "invalid") // Invalid ID
+        .field("user_id", "invalid")
         .attach("file", Buffer.from("test"), "test.pdf");
 
       logger.debug(response.body);
@@ -95,7 +95,7 @@ describe("Letter API", () => {
 
   describe("PATCH /api/surat/:nomor_registrasi/status", () => {
     it("should update letter status by owner user", async () => {
-      const { nomor_registrasi } = await LetterTest.create(userId); // Surat milik user biasa
+      const { nomor_registrasi } = await LetterTest.create(userId);
 
       const response = await supertest(web)
         .patch(`/api/surat/${nomor_registrasi}/status`)
@@ -107,11 +107,11 @@ describe("Letter API", () => {
     });
 
     it("should reject update by non-owner user", async () => {
-      const { letter } = await LetterTest.createWithUser(); // Surat milik user lain
+      const { letter } = await LetterTest.createWithUser();
 
       const response = await supertest(web)
         .patch(`/api/surat/${letter.nomor_registrasi}/status`)
-        .set("X-API-TOKEN", userToken) // User biasa mencoba update surat orang lain
+        .set("X-API-TOKEN", userToken)
         .send({ status: "diterima" });
 
       expect(response.status).toBe(403);
@@ -190,8 +190,8 @@ describe("Letter API", () => {
         .set("X-API-TOKEN", userToken);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.length).toBe(1); // Hanya 1 surat (miliknya sendiri)
-      expect(response.body.data[0].user.id).toBe(userId); // Memastikan data yang kembali adalah miliknya
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].user.id).toBe(userId);
     });
   });
 });

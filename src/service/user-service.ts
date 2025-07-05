@@ -127,7 +127,6 @@ export class UserService {
     });
   }
 
-  // Admin Methods
   static async listUsers(
     page: number = 1,
     pageSize: number = 10
