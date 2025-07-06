@@ -85,6 +85,26 @@ export class LetterService {
     return toLetterResponse(letter);
   }
 
+  static async listByUserId(userId: number, page: number, limit: number) {
+    const [letters, total] = await Promise.all([
+      prismaClient.letter.findMany({
+        where: { user_id: userId },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { user: true },
+        orderBy: { created_at: "desc" },
+      }),
+      prismaClient.letter.count({ where: { user_id: userId } }),
+    ]);
+
+    return {
+      data: letters.map(toLetterResponse),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   static async update(
     nomorRegistrasi: number,
     request: UpdateLetterRequest,
@@ -195,16 +215,54 @@ export class LetterService {
     });
   }
 
-  static async list(userId?: number): Promise<LetterResponse[]> {
-    const whereClause = userId ? { user_id: userId } : {};
+  static async list(page = 1, limit?: number) {
+    if (limit && (isNaN(limit) || limit <= 0)) {
+      throw new ResponseError(400, "Limit must be a positive number");
+    }
 
-    const letters = await prismaClient.letter.findMany({
-      where: whereClause,
-      include: { user: true },
-      orderBy: { created_at: "desc" },
-    });
+    const [letters, total] = await Promise.all([
+      prismaClient.letter.findMany({
+        skip: limit ? (page - 1) * limit : undefined,
+        take: limit,
+        include: { user: true },
+        orderBy: { created_at: "desc" },
+      }),
+      prismaClient.letter.count(),
+    ]);
 
-    return letters.map(toLetterResponse);
+    return {
+      data: letters.map(toLetterResponse),
+      total,
+      page,
+      totalPages: limit ? Math.ceil(total / limit) : 1,
+    };
+  }
+
+  static async listByUser(userId?: number, page = 1, limit?: number) {
+    if (!userId) {
+      throw new ResponseError(401, "User not authenticated");
+    }
+
+    if (limit && (isNaN(limit) || limit <= 0)) {
+      throw new ResponseError(400, "Limit must be a positive number");
+    }
+    const [letters, total] = await Promise.all([
+      prismaClient.letter.findMany({
+        where: { user_id: userId },
+        skip: limit ? (page - 1) * limit : undefined,
+        take: limit,
+        include: { user: true },
+        orderBy: { created_at: "desc" },
+      }),
+      prismaClient.letter.count({ where: { user_id: userId } }),
+    ]);
+
+    return {
+      data: letters.map(toLetterResponse),
+      total,
+      page,
+      totalPages: limit ? Math.ceil(total / limit) : 1,
+    };
   }
 
   static async download(

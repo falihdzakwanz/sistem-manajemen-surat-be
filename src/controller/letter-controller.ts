@@ -91,28 +91,44 @@ export class LetterController {
     }
   }
 
-  static async list(req: UserRequest, res: Response, next: NextFunction) {
+  static async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await LetterService.list();
-      res.status(200).json({ data: response } as LetterListResponse);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+
+        const result = await LetterService.list(page, limit);
+
+      res.status(200).json(result);
     } catch (e) {
       next(e);
     }
   }
 
+    static async listByUserId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = parseInt(req.params.userId);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await LetterService.listByUserId(userId, page, limit);
+      res.status(200).json(result);
+    } catch (e) {
+      next(e);
+    }
+  }
+  
   static async listMyLetters(
     req: UserRequest,
     res: Response,
     next: NextFunction
   ) {
     try {
-      if (!req.user?.id) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
-      }
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
-      const response = await LetterService.list(req.user.id);
-      res.status(200).json({ data: response } as LetterListResponse);
+        const result = await LetterService.listByUser(req.user?.id, page, limit);
+
+      res.status(200).json(result);
     } catch (e) {
       next(e);
     }

@@ -37,4 +37,5 @@ apiRouter.put(
 );
 apiRouter.delete("/api/surat/:nomor_registrasi", LetterController.delete);
 apiRouter.get("/api/surat", LetterController.list);
+apiRouter.get("/api/surat/user/:userId", LetterController.listByUserId);
 
