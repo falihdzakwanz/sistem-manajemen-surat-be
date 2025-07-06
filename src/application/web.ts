@@ -4,11 +4,16 @@ import { publicRouter } from "../route/public-api";
 import { errorMiddleware } from "../middleware/error-middleware";
 import { apiRouter } from "../route/api";
 import { dashboardRouter } from "../route/dashboard-api";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const ORIGIN = process.env.WEB_ORIGIN || "http://localhost:3000";
 
 export const web = express();
 web.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: ORIGIN,
     credentials: true, 
     exposedHeaders: ["Content-Disposition"],
     allowedHeaders: ["X-API-TOKEN", "Content-Type"],
