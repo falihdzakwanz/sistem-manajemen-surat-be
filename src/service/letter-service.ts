@@ -293,4 +293,44 @@ export class LetterService {
 
     return { filePath: letter.file_url, fileName };
   }
+
+  static async getMonthlyReport(bulan: number, tahun: number) {
+    if (!bulan || !tahun) {
+      throw new ResponseError(400, "Bulan dan tahun wajib diisi");
+    }
+
+    const startDate = new Date(tahun, bulan - 1, 1).toISOString();
+    const endDate = new Date(tahun, bulan, 0, 23, 59, 59, 999).toISOString();
+
+    const letters = await prismaClient.letter.findMany({
+      where: {
+        tanggal_masuk: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      orderBy: {
+        tanggal_masuk: "asc",
+      },
+    });
+
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    console.log(letters);
+    return {
+      bulan,
+      tahun,
+      total: letters.length,
+      surat: letters.map((l) => ({
+        nomor_registrasi: l.nomor_registrasi,
+        tanggal_masuk: formatter.format(new Date(l.tanggal_masuk)),
+        tanggal_surat: formatter.format(new Date(l.tanggal_surat)),
+        pengirim: l.pengirim,
+        perihal: l.perihal,
+      })),
+    };
+  }
 }

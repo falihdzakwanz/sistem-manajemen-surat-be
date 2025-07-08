@@ -93,10 +93,12 @@ export class LetterController {
 
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
 
-        const result = await LetterService.list(page, limit);
+      const result = await LetterService.list(page, limit);
 
       res.status(200).json(result);
     } catch (e) {
@@ -104,7 +106,7 @@ export class LetterController {
     }
   }
 
-    static async listByUserId(req: Request, res: Response, next: NextFunction) {
+  static async listByUserId(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = parseInt(req.params.userId);
       const page = parseInt(req.query.page as string) || 1;
@@ -116,17 +118,19 @@ export class LetterController {
       next(e);
     }
   }
-  
+
   static async listMyLetters(
     req: UserRequest,
     res: Response,
     next: NextFunction
   ) {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
 
-        const result = await LetterService.listByUser(req.user?.id, page, limit);
+      const result = await LetterService.listByUser(req.user?.id, page, limit);
 
       res.status(200).json(result);
     } catch (e) {
@@ -151,6 +155,23 @@ export class LetterController {
       });
     } catch (e) {
       next(e);
+    }
+  }
+
+  static async monthlyReport(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const bulan = parseInt(req.query.bulan as string); // 1 - 12
+      const tahun = parseInt(req.query.tahun as string);
+
+      const result = await LetterService.getMonthlyReport(bulan, tahun);
+
+      res.status(200).json({ data: result });
+    } catch (error) {
+      next(error);
     }
   }
 }
