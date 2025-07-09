@@ -164,7 +164,7 @@ export class LetterController {
     next: NextFunction
   ) {
     try {
-      const bulan = parseInt(req.query.bulan as string); // 1 - 12
+      const bulan = parseInt(req.query.bulan as string); 
       const tahun = parseInt(req.query.tahun as string);
 
       const result = await LetterService.getMonthlyReport(bulan, tahun);

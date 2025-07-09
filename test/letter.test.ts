@@ -31,6 +31,14 @@ describe("Letter API", () => {
     await UserTest.deleteAll();
   });
 
+  beforeEach(async () => {
+    await LetterTest.deleteAll();
+  });
+
+  afterAll(async () => {
+    await UserTest.deleteAll();
+  });
+
   describe("POST /api/surat", () => {
     it("should create letter with valid PDF (under 10MB)", async () => {
       const response = await supertest(web)
@@ -38,8 +46,8 @@ describe("Letter API", () => {
         .set("X-API-TOKEN", adminToken)
         .field("pengirim", "Kementerian Test")
         .field("nomor_surat", "001/2023")
-        .field("tanggal_masuk", "30-12-2025")
-        .field("tanggal_surat", "30-12-2025")
+        .field("tanggal_masuk", new Date("2025-12-30").toISOString())
+        .field("tanggal_surat", new Date("2025-12-30").toISOString())
         .field("perihal", "Surat Test")
         .field("user_id", userId)
         .attach("file", LetterTest.getTestFile("pdf"), "valid.pdf");
@@ -76,8 +84,12 @@ describe("Letter API", () => {
       expect(response.body.data.id).toBe(letter.id);
       expect(response.body.data.pengirim).toBe(letter.pengirim);
       expect(response.body.data.nomor_surat).toBe(letter.nomor_surat);
-      expect(response.body.data.tanggal_masuk).toBe(letter.tanggal_masuk);
-      expect(response.body.data.tanggal_surat).toBe(letter.tanggal_surat);
+      expect(response.body.data.tanggal_masuk).toBe(
+        letter.tanggal_masuk.toISOString()
+      );
+      expect(response.body.data.tanggal_surat).toBe(
+        letter.tanggal_surat.toISOString()
+      );
       expect(response.body.data.perihal).toBe(letter.perihal);
       expect(response.body.data.nomor_registrasi).toBe(letter.nomor_registrasi);
       expect(response.body.data.file_url).toBe(letter.file_url);
@@ -192,6 +204,64 @@ describe("Letter API", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1);
       expect(response.body.data[0].user.id).toBe(userId);
+    });
+  });
+  
+  describe("GET /api/surat/laporan-bulanan", () => {
+    it("should return monthly report", async () => {
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+
+      await LetterTest.create(userId, {
+        pengirim: "Instansi A",
+        tanggal_masuk: new Date(currentYear, currentMonth - 1, 15),
+        tanggal_surat: new Date(currentYear, currentMonth - 1, 10),
+        perihal: "Surat Bulan Ini",
+      });
+
+      const response = await supertest(web)
+        .get("/api/surat/laporan-bulanan")
+        .query({ bulan: currentMonth, tahun: currentYear })
+        .set("X-API-TOKEN", adminToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.bulan).toBe(currentMonth);
+      expect(response.body.data.tahun).toBe(currentYear);
+      expect(response.body.data.total).toBe(1);
+      expect(response.body.data.surat[0].pengirim).toBe("Instansi A");
+    });
+
+    it("should reject if month is invalid", async () => {
+      const response = await supertest(web)
+        .get("/api/surat/laporan-bulanan")
+        .query({ bulan: 13, tahun: 2023 })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain("Bulan harus antara 1-12");
+    });
+
+    it("should reject if year is invalid", async () => {
+      const response = await supertest(web)
+        .get("/api/surat/laporan-bulanan")
+        .query({ bulan: 1, tahun: 1999 })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain("Tahun tidak valid");
+    });
+
+    it("should return empty if no data", async () => {
+      const response = await supertest(web)
+        .get("/api/surat/laporan-bulanan")
+        .query({ bulan: 1, tahun: 2000 })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.total).toBe(0);
+      expect(response.body.data.surat).toHaveLength(0);
     });
   });
 });

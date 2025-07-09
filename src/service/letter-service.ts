@@ -295,25 +295,15 @@ export class LetterService {
   }
 
   static async getMonthlyReport(bulan: number, tahun: number) {
-    if (!bulan || !tahun) {
-      throw new ResponseError(400, "Bulan dan tahun wajib diisi");
-    }
+    if (isNaN(bulan)) throw new ResponseError(400, "Bulan harus berupa angka");
+    if (isNaN(tahun)) throw new ResponseError(400, "Tahun harus berupa angka");
+    if (bulan < 1 || bulan > 12)
+      throw new ResponseError(400, "Bulan harus antara 1-12");
+    if (tahun < 2000 || tahun > 2100)
+      throw new ResponseError(400, "Tahun tidak valid");
 
-    // Fungsi helper untuk format dua digit
-    const padToTwoDigits = (num: number): string => {
-      return num.toString().padStart(2, "0");
-    };
-
-    // Format tanggal sesuai database (dd-mm-yyyy)
-    const startDay = "01";
-    const startMonth = padToTwoDigits(bulan);
-    const endDay = padToTwoDigits(new Date(tahun, bulan, 0).getDate());
-    const endMonth = padToTwoDigits(bulan);
-
-    const startDate = `${startDay}-${startMonth}-${tahun}`;
-    const endDate = `${endDay}-${endMonth}-${tahun}`;
-
-    console.log(`Mencari data dari ${startDate} sampai ${endDate}`);
+    const startDate = new Date(tahun, bulan - 1, 1);
+    const endDate = new Date(tahun, bulan, 0, 23, 59, 59, 999);
 
     const letters = await prismaClient.letter.findMany({
       where: {
@@ -344,7 +334,9 @@ export class LetterService {
       bulan: bulan,
       tahun: tahun,
       total: letters.length,
-      periode: `${startDate} s/d ${endDate}`,
+      periode: `${startDate.toLocaleDateString(
+        "id-ID"
+      )} s/d ${endDate.toLocaleDateString("id-ID")}`,
       surat: letters.map((l) => ({
         nomor_registrasi: l.nomor_registrasi,
         tanggal_masuk: l.tanggal_masuk,

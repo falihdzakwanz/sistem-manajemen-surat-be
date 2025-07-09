@@ -2,7 +2,7 @@ export interface DashboardStat {
   id: number;
   nomor_surat: string;
   perihal: string;
-  tanggal_surat: string;
+  tanggal_surat: Date;
   status: string;
   nama_instansi: string;
 }

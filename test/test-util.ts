@@ -64,8 +64,8 @@ export class UserTest {
         nama_instansi: "Admin",
         password: await bcrypt.hash("admin123", 10),
         role: "admin",
-        token: uuid()
-      }
+        token: uuid(),
+      },
     });
     return admin.token!;
   }
@@ -75,8 +75,8 @@ export class UserTest {
       data: {
         pengirim: "Test Sender",
         nomor_surat: "001/2023",
-        tanggal_masuk: "01-01-2023",
-        tanggal_surat: "01-01-2023",
+        tanggal_masuk: new Date("2023-01-01"),
+        tanggal_surat: new Date("2023-01-01"),
         perihal: "Test Letter",
         file_url: "/test/test.pdf",
         status: "pending",
@@ -153,8 +153,8 @@ export class LetterTest {
       data: {
         pengirim: data?.pengirim || "Kementerian Test",
         nomor_surat: data?.nomor_surat || "001/2023",
-        tanggal_masuk: data?.tanggal_masuk || "23-10-2025",
-        tanggal_surat: data?.tanggal_surat || "23-10-2025",
+        tanggal_masuk: data?.tanggal_masuk || new Date("2023-01-01"),
+        tanggal_surat: data?.tanggal_surat || new Date("2023-01-01"),
         perihal: data?.perihal || "Surat Test",
         file_url: filePath,
         status: data?.status || "pending",
