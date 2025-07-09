@@ -5,8 +5,8 @@ export type LetterResponse = {
   nomor_registrasi: number;
   pengirim: string;
   nomor_surat: string;
-  tanggal_masuk: string;
-  tanggal_surat: string;
+  tanggal_masuk: Date; 
+  tanggal_surat: Date; 
   perihal: string;
   file_url: string;
   status: "pending" | "diterima";
@@ -23,19 +23,19 @@ export type CreateLetterRequest = {
   pengirim: string;
   tujuan: string;
   nomor_surat: string;
-  tanggal_masuk: string;
-  tanggal_surat: string;
+  tanggal_masuk: Date | string; 
+  tanggal_surat: Date | string; 
   perihal: string;
   user_id: number;
-  file?: File; 
+  file?: File;
 };
 
 export type UpdateLetterRequest = {
   pengirim?: string;
   tujuan?: string;
   nomor_surat?: string;
-  tanggal_masuk?: string;
-  tanggal_surat?: string;
+  tanggal_masuk?: Date | string; 
+  tanggal_surat?: Date | string; 
   perihal?: string;
   user_id?: number;
   file?: File;

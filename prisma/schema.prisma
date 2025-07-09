@@ -26,8 +26,8 @@ model Letter {
   nomor_registrasi Int          @unique @default(autoincrement())
   pengirim         String       @db.VarChar(100)
   nomor_surat      String       @db.VarChar(50)
-  tanggal_masuk    String       @db.VarChar(10)  // DD-MM-YYYY format
-  tanggal_surat    String       @db.VarChar(10)  // DD-MM-YYYY format
+  tanggal_masuk    DateTime     @db.Date  
+  tanggal_surat    DateTime     @db.Date  
   perihal          String       @db.Text
   file_url         String       @db.VarChar(255)
   status           LetterStatus @default(pending)
