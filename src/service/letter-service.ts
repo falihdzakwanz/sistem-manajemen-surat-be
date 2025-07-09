@@ -299,8 +299,21 @@ export class LetterService {
       throw new ResponseError(400, "Bulan dan tahun wajib diisi");
     }
 
-    const startDate = new Date(tahun, bulan - 1, 1).toISOString();
-    const endDate = new Date(tahun, bulan, 0, 23, 59, 59, 999).toISOString();
+    // Fungsi helper untuk format dua digit
+    const padToTwoDigits = (num: number): string => {
+      return num.toString().padStart(2, "0");
+    };
+
+    // Format tanggal sesuai database (dd-mm-yyyy)
+    const startDay = "01";
+    const startMonth = padToTwoDigits(bulan);
+    const endDay = padToTwoDigits(new Date(tahun, bulan, 0).getDate());
+    const endMonth = padToTwoDigits(bulan);
+
+    const startDate = `${startDay}-${startMonth}-${tahun}`;
+    const endDate = `${endDay}-${endMonth}-${tahun}`;
+
+    console.log(`Mencari data dari ${startDate} sampai ${endDate}`);
 
     const letters = await prismaClient.letter.findMany({
       where: {
@@ -309,27 +322,37 @@ export class LetterService {
           lte: endDate,
         },
       },
+      select: {
+        nomor_registrasi: true,
+        tanggal_masuk: true,
+        tanggal_surat: true,
+        pengirim: true,
+        perihal: true,
+        status: true,
+        user: {
+          select: {
+            nama_instansi: true,
+          },
+        },
+      },
       orderBy: {
         tanggal_masuk: "asc",
       },
     });
 
-    const formatter = new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    console.log(letters);
     return {
-      bulan,
-      tahun,
+      bulan: bulan,
+      tahun: tahun,
       total: letters.length,
+      periode: `${startDate} s/d ${endDate}`,
       surat: letters.map((l) => ({
         nomor_registrasi: l.nomor_registrasi,
-        tanggal_masuk: formatter.format(new Date(l.tanggal_masuk)),
-        tanggal_surat: formatter.format(new Date(l.tanggal_surat)),
+        tanggal_masuk: l.tanggal_masuk,
+        tanggal_surat: l.tanggal_surat,
         pengirim: l.pengirim,
+        tujuan: l.user.nama_instansi,
         perihal: l.perihal,
+        status: l.status,
       })),
     };
   }
