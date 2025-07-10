@@ -111,7 +111,7 @@ describe("Letter API", () => {
 
       const response = await supertest(web)
         .patch(`/api/surat/${nomor_registrasi}/status`)
-        .set("X-API-TOKEN", userToken) 
+        .set("X-API-TOKEN", userToken)
         .send({ status: "diterima" });
 
       expect(response.status).toBe(200);
@@ -206,7 +206,110 @@ describe("Letter API", () => {
       expect(response.body.data[0].user.id).toBe(userId);
     });
   });
-  
+
+  describe("GET /api/surat with month/year filter", () => {
+    const testDate = new Date(2023, 5, 15);
+    const testMonth = testDate.getMonth() + 1;
+    const testYear = testDate.getFullYear();
+
+    beforeAll(async () => {
+      await LetterTest.deleteAll();
+
+      await LetterTest.create(userId, {
+        pengirim: "Instansi Juni 2023",
+        tanggal_masuk: new Date(2023, 5, 10),
+        perihal: "Surat Juni 2023",
+      });
+
+      await LetterTest.create(userId, {
+        pengirim: "Instansi Mei 2023",
+        tanggal_masuk: new Date(2023, 4, 10),
+        perihal: "Surat Mei 2023",
+      });
+
+      await LetterTest.create(userId, {
+        pengirim: "Instansi Juni 2022",
+        tanggal_masuk: new Date(2022, 5, 10),
+        perihal: "Surat Juni 2022",
+      });
+    });
+
+    it("should filter letters by month and year (admin)", async () => {
+      await LetterTest.create(userId, {
+        pengirim: "Instansi Juni 2023",
+        tanggal_masuk: new Date(2023, 5, 15),
+        perihal: "Surat Juni 2023",
+      });
+
+      const response = await supertest(web)
+        .get("/api/surat")
+        .query({
+          bulan: 6,
+          tahun: 2023,
+        })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].pengirim).toBe("Instansi Juni 2023");
+    });
+
+    it("should return empty if no letters in filtered month", async () => {
+      const response = await supertest(web)
+        .get("/api/surat")
+        .query({ bulan: 1, tahun: testYear }) 
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(0);
+    });
+
+    it("should reject invalid month parameter", async () => {
+      const response = await supertest(web)
+        .get("/api/surat")
+        .query({ bulan: 13, tahun: testYear })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain("Month must be between 1-12");
+    });
+
+    it("should reject invalid year parameter", async () => {
+      const response = await supertest(web)
+        .get("/api/surat")
+        .query({ bulan: testMonth, tahun: 1999 })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain("Year must be between 2000-2100");
+    });
+
+    it("should work with pagination and filtering together", async () => {
+      for (let i = 0; i < 5; i++) {
+        await LetterTest.create(userId, {
+          pengirim: `Instansi Juni 2023 - ${i}`,
+          tanggal_masuk: new Date(testYear, testMonth - 1, i + 1),
+          perihal: `Surat Juni 2023 - ${i}`,
+        });
+      }
+
+      const response = await supertest(web)
+        .get("/api/surat")
+        .query({
+          bulan: testMonth,
+          tahun: testYear,
+          page: 2,
+          limit: 2,
+        })
+        .set("X-API-TOKEN", adminToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(2);
+      expect(response.body.page).toBe(2);
+      expect(response.body.totalPages).toBe(3);
+    });
+  });
+
   describe("GET /api/surat/laporan-bulanan", () => {
     it("should return monthly report", async () => {
       const currentDate = new Date();
