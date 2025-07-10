@@ -134,8 +134,14 @@ export class LetterController {
       const limit = req.query.limit
         ? parseInt(req.query.limit as string)
         : undefined;
+      const bulan = req.query.bulan
+        ? parseInt(req.query.bulan as string)
+        : undefined;
+      const tahun = req.query.tahun
+        ? parseInt(req.query.tahun as string)
+        : undefined;
 
-      const result = await LetterService.listByUser(req.user?.id, page, limit);
+      const result = await LetterService.listByUser(req.user?.id, page, limit, bulan, tahun);
 
       res.status(200).json(result);
     } catch (e) {

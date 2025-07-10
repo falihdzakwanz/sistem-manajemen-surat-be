@@ -221,7 +221,7 @@ export class LetterService {
         throw new ResponseError(400, "Month must be between 1-12");
       }
     }
-    console.log(year)
+
     if (year !== undefined) {
       if (isNaN(year) || year < 2000 || year > 2100) {
         throw new ResponseError(400, "Year must be between 2000-2100");
@@ -261,23 +261,60 @@ export class LetterService {
     };
   }
 
-  static async listByUser(userId?: number, page = 1, limit?: number) {
+  static async listByUser(
+    userId?: number,
+    page = 1,
+    limit?: number,
+    month?: number,
+    year?: number
+  ) {
     if (!userId) {
       throw new ResponseError(401, "User not authenticated");
+    }
+
+    if (month !== undefined) {
+      if (isNaN(month) || month < 1 || month > 12) {
+        throw new ResponseError(400, "Month must be between 1-12");
+      }
+    }
+
+    if (year !== undefined) {
+      if (isNaN(year) || year < 2000 || year > 2100) {
+        throw new ResponseError(400, "Year must be between 2000-2100");
+      }
     }
 
     if (limit && (isNaN(limit) || limit <= 0)) {
       throw new ResponseError(400, "Limit must be a positive number");
     }
+
+    const dateFilter =
+      month && year
+        ? {
+            tanggal_masuk: {
+              gte: new Date(year, month - 1, 1),
+              lte: new Date(year, month, 0, 23, 59, 59, 999),
+            },
+          }
+        : {};
+
     const [letters, total] = await Promise.all([
       prismaClient.letter.findMany({
-        where: { user_id: userId },
+        where: {
+          user_id: userId,
+          ...dateFilter,
+        },
         skip: limit ? (page - 1) * limit : undefined,
         take: limit,
         include: { user: true },
         orderBy: { created_at: "desc" },
       }),
-      prismaClient.letter.count({ where: { user_id: userId } }),
+      prismaClient.letter.count({
+        where: {
+          user_id: userId,
+          ...dateFilter,
+        },
+      }),
     ]);
 
     return {
