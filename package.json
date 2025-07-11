@@ -5,9 +5,10 @@
   "main": "dist/main.js",
   "scripts": {
     "test": "jest",
-    "init-users": "ts-node ./scripts/init-users.ts",
     "build": "tsc",
-    "start": "node dist/main.js"
+    "init-users": "ts-node ./scripts/init-users.ts",
+    "start": "node dist/main.js",
+    "postinstall": "prisma generate"
   },
   "jest": {
     "transform": {
