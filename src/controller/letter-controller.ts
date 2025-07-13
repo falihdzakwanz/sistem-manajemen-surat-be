@@ -141,7 +141,13 @@ export class LetterController {
         ? parseInt(req.query.tahun as string)
         : undefined;
 
-      const result = await LetterService.listByUser(req.user?.id, page, limit, bulan, tahun);
+      const result = await LetterService.listByUser(
+        req.user?.id,
+        page,
+        limit,
+        bulan,
+        tahun
+      );
 
       res.status(200).json(result);
     } catch (e) {
@@ -158,6 +164,10 @@ export class LetterController {
       );
 
       res.header("Access-Control-Expose-Headers", "Content-Disposition");
+
+      if (filePath.startsWith("https://")) {
+        return res.redirect(filePath);
+      }
 
       res.download(filePath, fileName, (err) => {
         if (err) {

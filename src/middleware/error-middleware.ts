@@ -36,6 +36,10 @@ export const errorMiddleware = (
     return res.status(err.status).json({
       errors: err.message,
     });
+  } else if (err instanceof Error && err.message.includes("Supabase")) {
+    return res.status(503).json({
+      errors: "Storage service unavailable",
+    });
   } else {
     logger.error(err);
     return res.status(500).json({

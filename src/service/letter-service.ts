@@ -12,6 +12,7 @@ import { ResponseError } from "../error/response-error";
 import path from "path";
 import fs from "fs";
 import { User } from "@prisma/client";
+import { supabase } from "../application/supabase";
 
 export class LetterService {
   private static async validateUser(userId: number): Promise<User> {
@@ -28,17 +29,30 @@ export class LetterService {
 
   private static async saveFile(file: Express.Multer.File): Promise<string> {
     try {
-      if (!file.path) {
-        throw new ResponseError(400, "File path is missing");
+      // 1. Validasi file
+      if (!file.buffer) throw new Error("File buffer tidak valid");
+
+      // 2. Generate nama unik
+      const fileExt = file.originalname.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `documents/${fileName}`;
+
+      // 3. Upload ke Supabase
+    const { error } = await supabase.storage
+      .from('letters')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype
+      });
+
+      if (error) {
+        console.error("Detail error Supabase:", error);
+        throw new Error(`Upload gagal: ${error.message}`);
       }
 
-      if (!fs.existsSync(file.path)) {
-        throw new ResponseError(500, "File was not saved correctly");
-      }
-
-      return path.relative(process.cwd(), file.path);
+      return filePath;
     } catch (error) {
-      throw new ResponseError(500, `Failed to process file`);
+      console.error("Error saveFile:", error);
+      throw new ResponseError(500, "Gagal menyimpan file");
     }
   }
 
@@ -124,25 +138,44 @@ export class LetterService {
       await this.validateUser(updateRequest.user_id);
     }
 
-    let filePath = existingLetter.file_url;
+    let fileUrl = existingLetter.file_url;
+
+    // Jika ada file baru diupload
     if (file) {
-      if (fs.existsSync(existingLetter.file_url)) {
+      // Hapus file lama dari Supabase (jika berasal dari Supabase)
+      if (existingLetter.file_url.startsWith("https://")) {
+        const oldFilePath = existingLetter.file_url
+          .split("/storage/v1/object/")[1]
+          .split("/letters/")[1];
+
+        if (oldFilePath) {
+          const { error } = await supabase.storage
+            .from("letters")
+            .remove([oldFilePath]);
+
+          if (error) {
+            console.error("Gagal menghapus file lama:", error.message);
+            // Lanjutkan proses upload file baru meskipun gagal hapus yang lama
+          }
+        }
+      }
+      // Hapus file lokal (jika ada)
+      else if (fs.existsSync(existingLetter.file_url)) {
         fs.unlinkSync(existingLetter.file_url);
       }
-      filePath = await this.saveFile(file);
+
+      // Upload file baru ke Supabase
+      fileUrl = await this.saveFile(file);
     }
 
+    // Update data di database
     const updatedLetter = await prismaClient.letter.update({
       where: { nomor_registrasi: nomorRegistrasi },
       data: {
         ...updateRequest,
-        tanggal_masuk: updateRequest.tanggal_masuk
-          ? updateRequest.tanggal_masuk
-          : undefined,
-        tanggal_surat: updateRequest.tanggal_surat
-          ? updateRequest.tanggal_surat
-          : undefined,
-        file_url: file ? filePath : undefined,
+        tanggal_masuk: updateRequest.tanggal_masuk ?? undefined,
+        tanggal_surat: updateRequest.tanggal_surat ?? undefined,
+        file_url: file ? fileUrl : undefined,
       },
       include: { user: true },
     });
@@ -206,7 +239,17 @@ export class LetterService {
       throw new ResponseError(404, "Letter not found");
     }
 
-    if (fs.existsSync(letter.file_url)) {
+    // Hapus dari Supabase jika URL-nya berasal dari sana
+    if (letter.file_url.startsWith("https://")) {
+      const filePath = letter.file_url.split("/").pop() || "";
+      const { error } = await supabase.storage
+        .from("letters")
+        .remove([filePath]);
+
+      if (error) console.error("Gagal hapus file di Supabase:", error);
+    }
+    // Hapus file lokal (jika ada)
+    else if (fs.existsSync(letter.file_url)) {
       fs.unlinkSync(letter.file_url);
     }
 
@@ -341,17 +384,45 @@ export class LetterService {
       throw new ResponseError(404, "Letter not found");
     }
 
-    if (!fs.existsSync(letter.file_url)) {
-      throw new ResponseError(404, "File not found");
-    }
-
     if (letter.user.id !== user.id && user.role !== "admin") {
       throw new ResponseError(403, "Access denied");
     }
 
-    const fileName = path.basename(letter.file_url);
+    // Jika file disimpan di Supabase (format URL Supabase)
+    if (letter.file_url.startsWith("https://")) {
+      // Ambil path file dari URL (contoh: "documents/file123.pdf")
+      const filePath =
+        letter.file_url.split("/storage/v1/object/public/letters/")[1] ||
+        letter.file_url.split("/storage/v1/object/authenticated/letters/")[1];
 
-    return { filePath: letter.file_url, fileName };
+      if (!filePath) {
+        throw new ResponseError(500, "Invalid file URL format");
+      }
+
+      // Generate signed URL baru
+      const { data: signedUrlData, error } = await supabase.storage
+        .from("letters")
+        .createSignedUrl(filePath, 3600); // Expires in 1 jam
+
+      if (error || !signedUrlData?.signedUrl) {
+        throw new ResponseError(500, "Failed to generate download URL");
+      }
+
+      return {
+        filePath: signedUrlData.signedUrl,
+        fileName: path.basename(filePath),
+      };
+    }
+
+    // Fallback untuk file lokal (jika ada)
+    if (fs.existsSync(letter.file_url)) {
+      return {
+        filePath: letter.file_url,
+        fileName: path.basename(letter.file_url),
+      };
+    }
+
+    throw new ResponseError(404, "File not found");
   }
 
   static async getMonthlyReport(bulan: number, tahun: number) {
